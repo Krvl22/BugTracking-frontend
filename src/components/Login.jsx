@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
 
-export const Login = () => {
+const Login = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -31,7 +31,6 @@ export const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
     if (!formData.email || !formData.password) {
       toast.error("Please fill in all fields");
       return;
@@ -40,42 +39,46 @@ export const Login = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post("https://node5.onrender.com/user/login", {
+      const res = await axios.post("http://localhost:3000/user/login", {
         email: formData.email,
         password: formData.password,
+        role: formData.role, // ✅ sending role too
       });
 
       if (res.status === 200) {
+        const userData = res.data.data;
+
+        // ✅ Save user info to localStorage
+        localStorage.setItem("user", JSON.stringify(userData));
+
         toast.success("Login successful! Redirecting...");
-        localStorage.setItem("user", JSON.stringify(res.data));
 
-        const role = res?.data?.data?.role;
-
-        // ✅ Fixed routes to match AppRoutes.jsx
+        // ✅ Role-based redirect
+        const role = userData?.role;
         if (role === "admin") navigate("/admindashboard");
         else if (role === "manager") navigate("/managerdashboard");
         else if (role === "developer") navigate("/developerdashboard");
         else if (role === "tester") navigate("/testerdashboard");
-        else {
-          toast.warning("Unknown role, contact admin");
-        }
+        else toast.warning("Unknown role. Please contact admin.");
       }
     } catch (err) {
       console.log(err);
-      if (err.response?.status === 401) {
-        toast.error("Invalid email or password");
-      } else if (err.response?.status === 404) {
-        toast.error("User not found");
-      } else {
-        toast.error("Login failed. Please try again.");
-      }
+      if (err.response?.status === 401) toast.error("Invalid email or password");
+      else if (err.response?.status === 404) toast.error("User not found");
+      else toast.error("Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // ℹ️ About useForm:
+  // You do NOT need useForm here. Your form is simple and already works perfectly.
+  // useForm (React Hook Form) is useful when you have 10+ fields or complex validation.
+  // For login (only 2 fields), useState is cleaner and easier to understand.
+
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-6">
+      {/* Background glows */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700"></div>
@@ -83,16 +86,22 @@ export const Login = () => {
 
       <div className="relative w-full max-w-md">
         <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-2xl border border-white/20 p-8">
+
+          {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Bug Tracker</h1>
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded-full bg-linear-to-r from-blue-500 to-cyan-500"></div>
+              <h1 className="text-3xl font-bold text-white">Bug Tracker</h1>
+            </div>
             <p className="text-slate-300 text-sm">Sign in to manage your projects</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Role */}
+
+            {/* Role Selection */}
             <div>
               <label className="block text-sm font-medium text-white mb-3">
-                Select Role
+                Select Your Role
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {["developer", "tester", "manager", "admin"].map((role) => (
@@ -100,75 +109,100 @@ export const Login = () => {
                     key={role}
                     type="button"
                     onClick={() => handleRoleSelect(role)}
-                    className={`py-3 px-4 rounded-xl text-sm font-medium transition capitalize ${
+                    className={`py-3 px-4 rounded-xl text-sm font-medium transition-all capitalize ${
                       formData.role === role
-                        ? "bg-linear-to-r from-blue-500 to-cyan-500 text-white"
-                        : "bg-white/5 text-slate-300 border border-white/10"
+                        ? "bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-lg"
+                        : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
                     }`}
                   >
-                    {role}
+                    {role === "manager" ? "Project Manager" : role.charAt(0).toUpperCase() + role.slice(1)}
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Email */}
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email"
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-
-            {/* Password */}
-            <div className="relative">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Email Address
+              </label>
               <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                placeholder="Password"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="your.email@company.com"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-white"
-              >
-                👁
-              </button>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-12"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
+                >
+                  {showPassword ? "🙈" : "👁"}
+                </button>
+              </div>
             </div>
 
             {/* Remember Me */}
-            <label className="flex items-center space-x-2 text-slate-300 cursor-pointer">
-              <input
-                type="checkbox"
-                name="remember"
-                checked={formData.remember}
-                onChange={handleChange}
-              />
-              <span>Remember me</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="remember"
+                  checked={formData.remember}
+                  onChange={handleChange}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-sm">Remember me</span>
+              </label>
+              <a href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition">
+                Forgot password?
+              </a>
+            </div>
 
-            {/* Submit */}
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-linear-to-r from-blue-500 to-cyan-500 rounded-xl text-white font-medium hover:opacity-90 transition disabled:opacity-50"
+              className="w-full py-3 bg-linear-to-r from-blue-500 to-cyan-500 rounded-xl text-white font-semibold hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"/>
+                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  Signing in...
+                </span>
+              ) : "Sign In"}
             </button>
 
             <p className="text-center text-sm text-slate-300">
               Don't have an account?{" "}
-              <a href="/signup" className="text-blue-400 hover:text-blue-300">
+              <a href="/signup" className="text-blue-400 hover:text-blue-300 font-medium transition">
                 Sign Up
               </a>
             </p>
+
           </form>
         </div>
       </div>
@@ -177,8 +211,6 @@ export const Login = () => {
 };
 
 export default Login;
-
-
 
 
 

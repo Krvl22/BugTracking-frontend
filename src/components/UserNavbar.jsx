@@ -24,6 +24,11 @@ export const UserNavbar = () => {
               </Link>
             </li>
             <li>
+              <Link to="/admin/adminsidebar" className="hover:text-blue-500">
+                Admin SideBar
+              </Link>
+            </li>
+            <li>
               <Link to="/user/useeffectdemo" className="hover:text-blue-500">
                 useeffectdemo
               </Link>

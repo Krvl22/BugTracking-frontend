@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
 
-export const Signup = () => {
+const Signup = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -12,7 +12,6 @@ export const Signup = () => {
     password: "",
     confirmPassword: "",
     role: "developer",
-    department: "",
     terms: false,
   });
 
@@ -28,6 +27,10 @@ export const Signup = () => {
       [name]: type === "checkbox" ? checked : value,
     }));
     if (name === "password") checkPasswordStrength(value);
+  };
+
+  const handleRoleSelect = (role) => {
+    setFormData((prev) => ({ ...prev, role }));
   };
 
   const checkPasswordStrength = (password) => {
@@ -60,9 +63,8 @@ export const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validations with toast
     if (!formData.fullName || !formData.email || !formData.password) {
-      toast.error("Please fill in all fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -84,22 +86,28 @@ export const Signup = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post("https://node5.onrender.com/user/user", {
-        name: formData.fullName,
+      const nameParts = formData.fullName.trim().split(" ");
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      const res = await axios.post("http://localhost:3000/user/register", {
+        firstName,
+        lastName,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
-        department: formData.department,
+        role: formData.role, // ✅ now matches UserModel enum exactly
       });
 
       if (res.status === 200 || res.status === 201) {
         toast.success("Account created successfully! Please login.");
-        setTimeout(() => navigate("/"), 2000); // redirect to login after 2s
+        setTimeout(() => navigate("/"), 2000);
       }
     } catch (err) {
       console.log(err);
       if (err.response?.status === 409) {
         toast.error("Email already exists. Please login.");
+      } else if (err.response?.status === 400) {
+        toast.error("Invalid data. Please check your inputs.");
       } else {
         toast.error("Signup failed. Please try again.");
       }
@@ -110,19 +118,27 @@ export const Signup = () => {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-6">
-      <div className="absolute inset-0 overflow-hidden">
+
+      {/* Background glows */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700"></div>
       </div>
 
       <div className="relative w-full max-w-lg">
         <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-2xl border border-white/20 p-8 my-8">
+
+          {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-            <p className="text-slate-300 text-sm">Join Bug Tracker to manage your projects</p>
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded-full bg-linear-to-r from-blue-500 to-cyan-500"></div>
+              <h1 className="text-3xl font-bold text-white">Bug Tracker</h1>
+            </div>
+            <p className="text-slate-300 text-sm">Create your account to get started</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+
             {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-white mb-2">Full Name</label>
@@ -131,7 +147,7 @@ export const Signup = () => {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 placeholder="John Doe"
                 required
               />
@@ -145,38 +161,35 @@ export const Signup = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 placeholder="your.email@company.com"
                 required
               />
             </div>
 
-            {/* Role & Department */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Role</label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
-                >
-                  <option value="developer" className="bg-slate-900">Developer</option>
-                  <option value="tester" className="bg-slate-900">Tester</option>
-                  <option value="manager" className="bg-slate-900">Project Manager</option>
-                  <option value="admin" className="bg-slate-900">Admin</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Department</label>
-                <input
-                  type="text"
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Engineering"
-                />
+            {/* Role Selection */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-3">Select Role</label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { value: "developer", label: "Developer" },
+                  { value: "tester", label: "Tester" },
+                  { value: "manager", label: "Project Manager" }, // ✅ matches UserModel enum
+                  { value: "admin", label: "Admin" },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => handleRoleSelect(r.value)}
+                    className={`py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+                      formData.role === r.value
+                        ? "bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-lg"
+                        : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -189,24 +202,31 @@ export const Signup = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-12"
                   placeholder="Create a strong password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
                 >
-                  👁
+                  {showPassword ? "🙈" : "👁"}
                 </button>
               </div>
+
+              {/* Password Strength Bar */}
               {passwordStrength && (
                 <div className="mt-2 flex items-center gap-2">
                   <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div className={`h-full ${getStrengthColor()} ${getStrengthWidth()} transition-all duration-300`}></div>
                   </div>
-                  <span className="text-xs text-slate-300 capitalize min-w-16">{passwordStrength}</span>
+                  <span className={`text-xs capitalize min-w-12 ${
+                    passwordStrength === "weak" ? "text-red-400" :
+                    passwordStrength === "medium" ? "text-yellow-400" : "text-green-400"
+                  }`}>
+                    {passwordStrength}
+                  </span>
                 </div>
               )}
             </div>
@@ -220,18 +240,27 @@ export const Signup = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-12"
                   placeholder="Confirm your password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-3 text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
                 >
-                  👁
+                  {showConfirmPassword ? "🙈" : "👁"}
                 </button>
               </div>
+
+              {/* Password match indicator */}
+              {formData.confirmPassword && (
+                <p className={`text-xs mt-1 ${
+                  formData.password === formData.confirmPassword ? "text-green-400" : "text-red-400"
+                }`}>
+                  {formData.password === formData.confirmPassword ? "✅ Passwords match" : "❌ Passwords don't match"}
+                </p>
+              )}
             </div>
 
             {/* Terms */}
@@ -242,9 +271,9 @@ export const Signup = () => {
                 id="terms"
                 checked={formData.terms}
                 onChange={handleChange}
-                className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500"
+                className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 accent-blue-500 cursor-pointer"
               />
-              <label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
+              <label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer leading-relaxed">
                 I agree to the{" "}
                 <a href="/terms" className="text-blue-400 hover:text-blue-300 underline">Terms of Service</a>
                 {" "}and{" "}
@@ -252,21 +281,30 @@ export const Signup = () => {
               </label>
             </div>
 
-            {/* Submit */}
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium rounded-xl shadow-lg transition-all duration-200 disabled:opacity-50"
+              className="w-full py-3 px-4 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Creating Account..." : "Create Account"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"/>
+                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  Creating Account...
+                </span>
+              ) : "Create Account"}
             </button>
 
             <p className="text-center text-sm text-slate-300">
               Already have an account?{" "}
-              <a href="/" className="text-blue-400 hover:text-blue-300 font-medium">
+              <a href="/" className="text-blue-400 hover:text-blue-300 font-medium transition">
                 Sign In
               </a>
             </p>
+
           </form>
         </div>
       </div>
@@ -275,7 +313,6 @@ export const Signup = () => {
 };
 
 export default Signup;
-
 
 
 // import React, { useState } from "react";
