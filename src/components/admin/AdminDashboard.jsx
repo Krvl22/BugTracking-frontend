@@ -61,9 +61,17 @@
 
 
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom"; 
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate(); // ✅ added
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/"); 
+  };
+
 
   const stats = [
     { label: 'Total Users', value: '124', change: '+12%', icon: '👥', color: 'from-blue-500 to-cyan-500' },
@@ -169,7 +177,7 @@ const AdminDashboard = () => {
                   </svg>
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
-                <button className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 text-sm font-medium">
+                <button onClick={handleLogout}  className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 text-sm font-medium">
                   Logout
                 </button>
               </div>

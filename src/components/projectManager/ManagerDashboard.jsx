@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom"; 
 
 const ManagerDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+
+   const handleLogout = () => {
+    localStorage.clear();
+    navigate("/"); 
+  };
 
   const stats = [
     { label: 'Active Projects', value: '12', change: '+2', color: 'from-blue-500 to-cyan-500' },
@@ -103,7 +110,10 @@ const ManagerDashboard = () => {
                 <button className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 text-sm font-medium">
                   + New Project
                 </button>
-                <button className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all duration-200 text-sm font-medium">
+                <button 
+                  onClick={handleLogout} // ✅ added
+                  className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 text-sm font-medium"
+                >
                   Logout
                 </button>
               </div>
