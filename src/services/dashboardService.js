@@ -1,8 +1,6 @@
-import axios from "axios";
+// services/dashboardService.js
+import API from '../api/axios';
 
-const API = "http://localhost:5000/api";
-
-export const getDashboardStats = async () => {
-  const response = await axios.get(`${API}/dashboard/stats`);
-  return response.data;
-};  
+export const getDashboardStats  = () => API.get('/admin/stats');
+export const getRecentUsers     = () => API.get('/admin/recent-users');
+export const getActiveProjects  = () => API.get('/admin/projects');

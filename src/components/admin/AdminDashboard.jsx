@@ -58,42 +58,50 @@
 
 
 
-
-
 import React, { useState } from 'react';
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate, Link, useLocation } from "react-router-dom"; // ✅ useLocation added here
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate(); // ✅ added
+  const navigate = useNavigate();
+  const location = useLocation(); // ✅ this goes inside component, not inside JSX
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/"); 
+    navigate("/");
   };
 
+  // ✅ navItems defined inside component, outside return
+  const navItems = [
+    { name: 'Dashboard', path: '/admindashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+    { name: 'Users',     path: '/admin/users',     icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+    { name: 'Projects',  path: '/admin/projects',  icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+    { name: 'Analytics', path: '/admin/analytics', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+    { name: 'Settings',  path: '/admin/settings',  icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
+  ];
 
   const stats = [
-    { label: 'Total Users', value: '124', change: '+12%', icon: '👥', color: 'from-blue-500 to-cyan-500' },
-    { label: 'Active Projects', value: '18', change: '+5%', icon: '📊', color: 'from-emerald-500 to-teal-500' },
-    { label: 'Total Bugs', value: '342', change: '-8%', icon: '🐛', color: 'from-orange-500 to-red-500' },
-    { label: 'System Health', value: '98%', change: '+2%', icon: '⚡', color: 'from-purple-500 to-pink-500' },
+    { label: 'Total Users',     value: '124', change: '+12%', icon: '👥', color: 'from-blue-500 to-cyan-500' },
+    { label: 'Active Projects', value: '18',  change: '+5%',  icon: '📊', color: 'from-emerald-500 to-teal-500' },
+    { label: 'Total Bugs',      value: '342', change: '-8%',  icon: '🐛', color: 'from-orange-500 to-red-500' },
+    { label: 'System Health',   value: '98%', change: '+2%',  icon: '⚡', color: 'from-purple-500 to-pink-500' },
   ];
 
   const recentUsers = [
-    { name: 'John Doe', email: 'john@company.com', role: 'Developer', status: 'Active', joined: '2 days ago' },
-    { name: 'Sarah Smith', email: 'sarah@company.com', role: 'Tester', status: 'Active', joined: '5 days ago' },
-    { name: 'Mike Johnson', email: 'mike@company.com', role: 'Manager', status: 'Pending', joined: '1 week ago' },
+    { name: 'John Doe',     email: 'john@company.com',  status: 'Active',  joined: '2 days ago' },
+    { name: 'Sarah Smith',  email: 'sarah@company.com', status: 'Active',  joined: '5 days ago' },
+    { name: 'Mike Johnson', email: 'mike@company.com',  status: 'Pending', joined: '1 week ago' },
   ];
 
   const projects = [
     { name: 'E-Commerce Platform', team: 12, bugs: 23, progress: 75, status: 'On Track' },
-    { name: 'Mobile App Redesign', team: 8, bugs: 15, progress: 60, status: 'In Progress' },
-    { name: 'API Integration', team: 5, bugs: 8, progress: 90, status: 'Almost Done' },
+    { name: 'Mobile App Redesign', team: 8,  bugs: 15, progress: 60, status: 'In Progress' },
+    { name: 'API Integration',     team: 5,  bugs: 8,  progress: 90, status: 'Almost Done' },
   ];
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900">
+
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
@@ -103,6 +111,7 @@ const AdminDashboard = () => {
       {/* Sidebar */}
       <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20">
+
           <div className="flex items-center justify-between mb-8 px-3">
             <h2 className="text-xl font-bold text-white">Bug Tracker</h2>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
@@ -112,19 +121,14 @@ const AdminDashboard = () => {
             </button>
           </div>
 
+          {/* ✅ Nav Links — now correctly inside JSX */}
           <nav className="space-y-2">
-            {[
-              { name: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', active: true },
-              { name: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-              { name: 'Projects', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-              { name: 'Analytics', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-              { name: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
-            ].map((item, index) => (
-              <a
-                key={index}
-                href="#"
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.path}
                 className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                  item.active
+                  location.pathname === item.path
                     ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
                     : 'text-slate-300 hover:bg-white/10'
                 }`}
@@ -133,10 +137,11 @@ const AdminDashboard = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                 </svg>
                 {item.name}
-              </a>
+              </Link>
             ))}
           </nav>
 
+          {/* Admin User Info */}
           <div className="absolute bottom-4 left-3 right-3">
             <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
               <div className="flex items-center space-x-3">
@@ -150,11 +155,13 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
+
         </div>
       </aside>
 
       {/* Main Content */}
       <div className="lg:ml-64">
+
         {/* Top Bar */}
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30">
           <div className="px-4 py-4 lg:px-8">
@@ -177,7 +184,7 @@ const AdminDashboard = () => {
                   </svg>
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
-                <button onClick={handleLogout}  className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 text-sm font-medium">
+                <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 text-sm font-medium">
                   Logout
                 </button>
               </div>
@@ -187,6 +194,7 @@ const AdminDashboard = () => {
 
         {/* Dashboard Content */}
         <main className="p-4 lg:p-8 relative z-10">
+
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
@@ -206,14 +214,15 @@ const AdminDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
             {/* Recent Users */}
             <div className="lg:col-span-2">
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-white">Recent Users</h2>
-                  <button className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                  <Link to="/admin/users" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
                     View All
-                  </button>
+                  </Link>
                 </div>
                 <div className="space-y-4">
                   {recentUsers.map((user, index) => (
@@ -246,17 +255,24 @@ const AdminDashboard = () => {
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
                 <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
                 <div className="space-y-3">
-                  {['Add New User', 'Create Project', 'View Reports', 'System Settings'].map((action, index) => (
-                    <button
+                  {[
+                    { label: 'Add New User',    path: '/admin/users' },
+                    { label: 'Create Project',  path: '/admin/projects' },
+                    { label: 'View Reports',    path: '/admin/analytics' },
+                    { label: 'System Settings', path: '/admin/settings' },
+                  ].map((action, index) => (
+                    <Link
                       key={index}
-                      className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-left transition-all duration-200"
+                      to={action.path}
+                      className="block w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-left transition-all duration-200"
                     >
-                      {action}
-                    </button>
+                      {action.label}
+                    </Link>
                   ))}
                 </div>
               </div>
             </div>
+
           </div>
 
           {/* Projects Overview */}
@@ -294,6 +310,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
+
         </main>
       </div>
     </div>
