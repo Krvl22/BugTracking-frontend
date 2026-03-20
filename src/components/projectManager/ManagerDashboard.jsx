@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect } from 'react';
 import { useNavigate } from "react-router-dom"; 
 
 const ManagerDashboard = () => {
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -9,25 +10,33 @@ const ManagerDashboard = () => {
     localStorage.clear();
     navigate("/"); 
   };
+  const [stats, setStats]=useState(null)
+  const [projects,setProjects]=useState([])
+  const [team, setTeam] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const stats = [
-    { label: 'Active Projects', value: '12', change: '+2', color: 'from-blue-500 to-cyan-500' },
-    { label: 'Total Tasks', value: '156', change: '+18', color: 'from-purple-500 to-pink-500' },
-    { label: 'Team Members', value: '28', change: '+3', color: 'from-green-500 to-emerald-500' },
-    { label: 'Pending Bugs', value: '45', change: '-12', color: 'from-orange-500 to-red-500' },
-  ];
+  useEffect(() => {
+  const getDashboardData = async () => {
+    const token = localStorage.getItem("token")
+    const res = await fetch("http://localhost:3000/manager/dashboard", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (data.success) {
+      setStats(data.data.stats)
+      setProjects(data.data.projects)
+      setTeam(data.data.team)
+    }
+    setLoading(false)
+  }
+  getDashboardData()
+}, [])
 
-  const projects = [
-    { name: 'E-Commerce Platform', progress: 75, team: 8, tasks: 45, bugs: 12, status: 'On Track', deadline: '2 weeks' },
-    { name: 'Mobile App Redesign', progress: 60, team: 6, tasks: 32, bugs: 8, status: 'In Progress', deadline: '1 month' },
-    { name: 'API Integration', progress: 90, team: 4, tasks: 18, bugs: 3, status: 'Near Complete', deadline: '5 days' },
-  ];
-
-  const teamMembers = [
-    { name: 'John Doe', role: 'Developer', tasks: 5, completed: 23, avatar: 'J' },
-    { name: 'Sarah Smith', role: 'Tester', tasks: 3, completed: 18, avatar: 'S' },
-    { name: 'Mike Johnson', role: 'Developer', tasks: 4, completed: 20, avatar: 'M' },
-  ];
+  if (loading) return (
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <p className="text-white text-xl">Loading...</p>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -47,31 +56,26 @@ const ManagerDashboard = () => {
               </svg>
             </button>
           </div>
-
-          <nav className="space-y-2">
-            {[
-              { name: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', active: true },
-              { name: 'Projects', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
-              { name: 'Team', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-              { name: 'Tasks', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-              { name: 'Reports', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-            ].map((item, index) => (
-              <a
-                key={index}
-                href="#"
-                className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                  item.active
-                    ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
-                    : 'text-slate-300 hover:bg-white/10'
-                }`}
-              >
-                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                </svg>
-                {item.name}
-              </a>
-            ))}
-          </nav>
+     
+            <nav className="space-y-2">
+              {[
+                { name: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', active: true },
+                { name: 'Projects', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
+                { name: 'Team',     icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+                { name: 'Tasks',   icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+                { name: 'Reports', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+              ].map((item, index) => (
+                <a key={index} href="#"
+                  className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                    item.active ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-lg' : 'text-slate-300 hover:bg-white/10'
+                  }`}>
+                  <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  </svg>
+                  {item.name}
+                </a>
+              ))}
+            </nav>
 
           <div className="absolute bottom-4 left-3 right-3">
             <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
@@ -125,15 +129,18 @@ const ManagerDashboard = () => {
         <main className="p-4 lg:p-8 relative z-10">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
+            {[
+              { label: 'Active Projects', value: stats?.totalProjects ?? '...', change: '+2',  color: 'from-blue-500 to-cyan-500' },
+              { label: 'Total Tasks',     value: stats?.totalTasks    ?? '...', change: '+18', color: 'from-purple-500 to-pink-500' },
+              { label: 'Team Members',    value: stats?.teamMembers   ?? '...', change: '+3',  color: 'from-green-500 to-emerald-500' },
+              { label: 'Pending Bugs',    value: stats?.pendingBugs   ?? '...', change: '-12', color: 'from-orange-500 to-red-500' },
+            ].map((stat, index) => (
               <div key={index} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-200">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-slate-300 text-sm">{stat.label}</h3>
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                     stat.change.startsWith('+') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {stat.change}
-                  </span>
+                  }`}>{stat.change}</span>
                 </div>
                 <p className="text-4xl font-bold text-white mb-3">{stat.value}</p>
                 <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -142,7 +149,6 @@ const ManagerDashboard = () => {
               </div>
             ))}
           </div>
-
           {/* Projects Overview */}
           <div className="mb-8">
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
@@ -154,30 +160,32 @@ const ManagerDashboard = () => {
                       <div>
                         <h3 className="text-white font-medium text-lg mb-2">{project.name}</h3>
                         <div className="flex flex-wrap gap-3 text-sm">
-                          <span className="text-slate-400">Team: {project.team} members</span>
+                          <span className="text-slate-400">Key: {project.projectKey}</span>
                           <span className="text-slate-400">•</span>
-                          <span className="text-slate-400">Tasks: {project.tasks}</span>
+                          {/* ── these don't exist yet — show N/A ── */}
+                          <span className="text-slate-400">Team: N/A</span>
                           <span className="text-slate-400">•</span>
-                          <span className="text-slate-400">Bugs: {project.bugs}</span>
+                          <span className="text-slate-400">Tasks: N/A</span>
                           <span className="text-slate-400">•</span>
-                          <span className="text-slate-400">Due: {project.deadline}</span>
+                          <span className="text-slate-400">
+                            Due: {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'No deadline'}
+                          </span>
                         </div>
                       </div>
                       <span className={`mt-3 lg:mt-0 inline-block px-4 py-1.5 rounded-full text-sm font-medium ${
-                        project.status === 'On Track' ? 'bg-green-500/20 text-green-400' :
-                        project.status === 'Near Complete' ? 'bg-blue-500/20 text-blue-400' :
+                        project.status === 'active'    ? 'bg-green-500/20 text-green-400' :
+                        project.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
                         'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {project.status}
-                      </span>
+                      }`}>{project.status}</span>
                     </div>
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-slate-400">Progress</span>
-                        <span className="text-white font-medium">{project.progress}%</span>
+                        <span className="text-white font-medium">50%</span>
                       </div>
                       <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-linear-to-r from-blue-500 to-cyan-500 transition-all duration-300" style={{ width: `${project.progress}%` }}></div>
+                        {/* hardcoded 50% until we calculate real progress */}
+                        <div className="h-full bg-linear-to-r from-blue-500 to-cyan-500" style={{ width: '50%' }}></div>
                       </div>
                     </div>
                   </div>
@@ -191,20 +199,21 @@ const ManagerDashboard = () => {
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
               <h2 className="text-xl font-bold text-white mb-6">Team Performance</h2>
               <div className="space-y-4">
-                {teamMembers.map((member, index) => (
+                {team.map((member, index) => (
                   <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-lg">
-                        {member.avatar}
+                        {member.firstName?.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-white font-medium">{member.name}</p>
-                        <p className="text-slate-400 text-sm">{member.role}</p>
+                        <p className="text-white font-medium">{member.firstName} {member.lastName}</p>
+                        <p className="text-slate-400 text-sm capitalize">{member.role}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-white font-medium">{member.tasks} Active</p>
-                      <p className="text-green-400 text-sm">{member.completed} Completed</p>
+                      {/* hardcoded until we add task counts to backend */}
+                      <p className="text-white font-medium">0 Active</p>
+                      <p className="text-green-400 text-sm">0 Completed</p>
                     </div>
                   </div>
                 ))}

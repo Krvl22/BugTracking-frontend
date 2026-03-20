@@ -1,13 +1,16 @@
-// api/axios.js
+// src/api/axios.js
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL  // ✅ Vite syntax
+  baseURL: "http://localhost:3000",
 });
 
+// ── Interceptor — adds token to every request automatically ──
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token"); // ✅ reads what Login.jsx saved
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
