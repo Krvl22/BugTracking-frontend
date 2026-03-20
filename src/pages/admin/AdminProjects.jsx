@@ -1,222 +1,290 @@
-// import React, { useState, useEffect } from "react";
-// import { getAllProjects, deleteProject, changeProjectStatus } from "../../services/projectService";
-// import { toast } from "react-toastify";
-
-// const AdminProjects = () => {
-//   const [projects, setProjects] = useState([]);
-//   const [loading,  setLoading]  = useState(true);
-
-//   useEffect(() => {
-//     getAllProjects()
-//       .then(res => setProjects(res.data.data)) // ✅ backend returns { success, data: [...] }
-//       .catch(() => toast.error("Failed to load projects"))
-//       .finally(() => setLoading(false));
-//   }, []);
-
-//   const handleDelete = async (id) => {
-//     if (!window.confirm("Delete this project?")) return;
-//     try {
-//       await deleteProject(id);
-//       setProjects(projects.filter(p => p._id !== id));
-//       toast.success("Project deleted");
-//     } catch {
-//       toast.error("Delete failed");
-//     }
-//   };
-
-//   const handleStatusChange = async (id, newStatus) => {
-//     try {
-//       await changeProjectStatus(id, newStatus);
-//       setProjects(projects.map(p =>
-//         p._id === id ? { ...p, status: newStatus } : p
-//       ));
-//       toast.success("Status updated");
-//     } catch {
-//       toast.error("Status update failed");
-//     }
-//   };
-
-//   if (loading) return (
-//     <div className="p-6 bg-slate-900 min-h-screen text-white">Loading...</div>
-//   );
-
-//   return (
-//     <div className="p-6 bg-slate-900 min-h-screen text-white">
-//       <h1 className="text-2xl font-bold mb-6">Manage Projects</h1>
-
-//       <div className="bg-slate-800 rounded-lg shadow-md overflow-hidden">
-//         <table className="w-full text-left">
-//           <thead className="bg-slate-700 text-gray-300">
-//             <tr>
-//               <th className="p-3">Project Name</th>
-//               <th className="p-3">Key</th>
-//               <th className="p-3">Created By</th>
-//               <th className="p-3">Team</th>
-//               <th className="p-3">Status</th>
-//               <th className="p-3">Created At</th>
-//               <th className="p-3">Actions</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {projects.map((project) => (
-//               <tr key={project._id} className="border-t border-slate-700 hover:bg-slate-700/40">
-
-//                 <td className="p-3 font-medium">{project.name}</td>
-
-//                 {/* ✅ backend has projectKey field */}
-//                 <td className="p-3">
-//                   <span className="bg-slate-600 px-2 py-1 rounded text-xs">
-//                     {project.projectKey}
-//                   </span>
-//                 </td>
-
-//                 {/* ✅ createdBy is populated { firstName, lastName, email } */}
-//                 <td className="p-3">
-//                   {project.createdBy?.firstName} {project.createdBy?.lastName}
-//                 </td>
-
-//                 {/* ✅ teamMembers is populated array */}
-//                 <td className="p-3">
-//                   {project.teamMembers?.length || 0} members
-//                 </td>
-
-//                 {/* ✅ status dropdown using your changeProjectStatus route */}
-//                 <td className="p-3">
-//                   <select
-//                     value={project.status}
-//                     onChange={(e) => handleStatusChange(project._id, e.target.value)}
-//                     className={`px-2 py-1 rounded text-sm bg-slate-700 border-0 cursor-pointer ${
-//                       project.status === "active"   ? "text-green-400" :
-//                       project.status === "inactive" ? "text-red-400"   :
-//                       "text-yellow-400"
-//                     }`}
-//                   >
-//                     <option value="active">Active</option>
-//                     <option value="inactive">Inactive</option>
-//                     <option value="completed">Completed</option>
-//                   </select>
-//                 </td>
-
-//                 <td className="p-3">
-//                   {new Date(project.createdAt).toLocaleDateString()}
-//                 </td>
-
-//                 <td className="p-3">
-//                   <button
-//                     onClick={() => handleDelete(project._id)}
-//                     className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 text-sm"
-//                   >
-//                     Delete
-//                   </button>
-//                 </td>
-
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-
-//         {projects.length === 0 && (
-//           <div className="text-center text-slate-400 py-8">No projects found</div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default AdminProjects;
-
-
-
-
-import React, { useState, useEffect } from "react";
-import { getAllProjects, deleteProject } from "../../services/projectService";
-import { toast } from "react-toastify";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 const AdminProjects = () => {
-  const [projects, setProjects] = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  const [sidebarOpen, setSidebarOpen]     = useState(false);
+  const [projects, setProjects]           = useState([]);
+  const [users, setUsers]                 = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [showAddModal, setShowAddModal]   = useState(false);
+  const [form, setForm]                   = useState({ name: '', description: '', projectKey: '', createdBy: '', startDate: '', endDate: '' });
+  const [formError, setFormError]         = useState('');
 
-  useEffect(() => {
-    getAllProjects()
-      .then(res => setProjects(res.data.data))
-      .catch(() => toast.error("Failed to load projects"))
-      .finally(() => setLoading(false));
-  }, []);
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const token     = localStorage.getItem('token');
+  const headers   = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this project?")) return;
+  const navItems = [
+    { name: 'Dashboard', path: '/admindashboard',  icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+    { name: 'Users',     path: '/admin/users',      icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+    { name: 'Projects',  path: '/admin/projects',   icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+    { name: 'Analytics', path: '/admin/analytics',  icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+    { name: 'Settings',  path: '/admin/settings',   icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
+  ];
+
+  const fetchProjects = async () => {
     try {
-      await deleteProject(id);
-      setProjects(projects.filter(p => p._id !== id));
-      toast.success("Project deleted");
-    } catch {
-      toast.error("Delete failed");
+      const res  = await fetch('http://localhost:3000/admin/projects', { headers });
+      const data = await res.json();
+      if (data.success) setProjects(data.data);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const res  = await fetch('http://localhost:3000/users', { headers });
+      const data = await res.json();
+      if (data.success) setUsers(data.data);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
+  };
+
+  useEffect(() => { fetchProjects(); fetchUsers(); }, []);
+
+  const handleLogout = () => { localStorage.clear(); navigate('/'); };
+
+  const handleAddProject = async () => {
+    setFormError('');
+    if (!form.name || !form.projectKey || !form.createdBy) {
+      setFormError('Name, Project Key and Created By are required'); return;
+    }
+    try {
+      const res  = await fetch('http://localhost:3000/projects', {
+        method: 'POST', headers, body: JSON.stringify(form)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowAddModal(false);
+        setForm({ name: '', description: '', projectKey: '', createdBy: '', startDate: '', endDate: '' });
+        fetchProjects();
+      } else {
+        setFormError(data.message || 'Failed to create project');
+      }
+    } catch (err) {
+      setFormError('Server error');
+      console.log(err)
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this project?')) return;
+    try {
+      await fetch(`http://localhost:3000/projects/${id}`, { method: 'DELETE', headers });
+      fetchProjects();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleStatusChange = async (id, status) => {
+    try {
+      await fetch(`http://localhost:3000/projects/${id}/status`, {
+        method: 'PATCH', headers, body: JSON.stringify({ status })
+      });
+      fetchProjects();
+    } catch (err) { console.error(err); }
+  };
+
+  const statusColor = (status) => {
+    if (status === 'active')    return 'bg-green-500/20 text-green-400';
+    if (status === 'completed') return 'bg-blue-500/20 text-blue-400';
+    return 'bg-yellow-500/20 text-yellow-400';
+  };
+
   if (loading) return (
-    <div className="p-6 bg-slate-900 min-h-screen text-white">Loading...</div>
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <p className="text-white text-xl">Loading projects...</p>
+    </div>
   );
 
   return (
-    <div className="p-6 bg-slate-900 min-h-screen text-white">
-      <h1 className="text-2xl font-bold mb-6">Manage Projects</h1>
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900">
 
-      <div className="bg-slate-800 rounded-lg shadow-md overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-700 text-gray-300">
-            <tr>
-              <th className="p-3">Project Name</th>
-              <th className="p-3">Key</th>
-              <th className="p-3">Created By</th>
-              <th className="p-3">Team</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Created At</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((project) => (
-              <tr key={project._id} className="border-t border-slate-700 hover:bg-slate-700/40">
-                <td className="p-3">{project.name}</td>
-                <td className="p-3">
-                  <span className="bg-slate-600 px-2 py-1 rounded text-xs">
-                    {project.projectKey}
-                  </span>
-                </td>
-                <td className="p-3">
-                  {project.createdBy?.firstName} {project.createdBy?.lastName}
-                </td>
-                <td className="p-3">
-                  {project.teamMembers?.length || 0} members
-                </td>
-                <td className="p-3">
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    project.status === "active" ? "bg-green-600" : "bg-red-600"
-                  }`}>
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
+        <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700"></div>
+      </div>
+
+      {/* Sidebar */}
+      <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+        <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20">
+          <div className="flex items-center justify-between mb-8 px-3">
+            <h2 className="text-xl font-bold text-white">Bug Tracker</h2>
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <nav className="space-y-2">
+            {navItems.map((item) => (
+              <Link key={item.name} to={item.path}
+                className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                  location.pathname === item.path
+                    ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
+                    : 'text-slate-300 hover:bg-white/10'
+                }`}>
+                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                </svg>
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+          <div className="absolute bottom-4 left-3 right-3">
+            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">A</div>
+                <div className="flex-1">
+                  <p className="text-white text-sm font-medium">Admin User</p>
+                  <p className="text-slate-400 text-xs">admin@company.com</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="lg:ml-64">
+        <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30">
+          <div className="px-4 py-4 lg:px-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Manage Projects</h1>
+                  <p className="text-slate-300 text-sm">{projects.length} total projects</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button onClick={() => setShowAddModal(true)}
+                  className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 text-sm font-medium">
+                  + Create Project
+                </button>
+                <button onClick={handleLogout}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all duration-200 text-sm font-medium">
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="p-4 lg:p-8 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project, index) => (
+              <div key={index} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-200">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="text-white font-semibold text-lg">{project.name}</h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor(project.status)}`}>
                     {project.status}
                   </span>
-                </td>
-                <td className="p-3">
-                  {new Date(project.createdAt).toLocaleDateString()}
-                </td>
-                <td className="p-3">
-                  <button
-                    onClick={() => handleDelete(project._id)}
-                    className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 text-sm"
-                  >
+                </div>
+                <p className="text-slate-400 text-sm mb-4">{project.description || 'No description'}</p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Project Key</span>
+                    <span className="text-white font-mono">{project.projectKey}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Created By</span>
+                    <span className="text-white">
+                      {project.createdBy ? `${project.createdBy.firstName} ${project.createdBy.lastName}` : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Created</span>
+                    <span className="text-white">{new Date(project.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  {project.status !== 'completed' && (
+                    <button onClick={() => handleStatusChange(project._id, 'completed')}
+                      className="flex-1 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs transition-colors">
+                      Mark Complete
+                    </button>
+                  )}
+                  {project.status === 'inactive' && (
+                    <button onClick={() => handleStatusChange(project._id, 'active')}
+                      className="flex-1 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs transition-colors">
+                      Activate
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(project._id)}
+                    className="py-2 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-xs transition-colors">
                     Delete
                   </button>
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-
-        {projects.length === 0 && (
-          <div className="text-center text-slate-400 py-8">No projects found</div>
-        )}
+          </div>
+        </main>
       </div>
+
+      {/* Add Project Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="backdrop-blur-xl bg-slate-900/90 border border-white/20 rounded-2xl p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-bold text-white mb-6">Create Project</h2>
+            {formError && <p className="text-red-400 text-sm mb-4">{formError}</p>}
+            <div className="space-y-4">
+              <input type="text" placeholder="Project Name" value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
+              <input type="text" placeholder="Project Key (e.g. ECP)" value={form.projectKey}
+                onChange={e => setForm({ ...form, projectKey: e.target.value.toUpperCase() })}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
+              <textarea placeholder="Description" value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 resize-none" rows={3} />
+              {/* Created By dropdown from real users */}
+              <select value={form.createdBy} onChange={e => setForm({ ...form, createdBy: e.target.value })}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500">
+                <option value="" className="bg-slate-900">Select Created By</option>
+                {users.map(u => (
+                  <option key={u._id} value={u._id} className="bg-slate-900">
+                    {u.firstName} {u.lastName} ({u.role})
+                  </option>
+                ))}
+              </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 text-xs mb-1 block">Start Date</label>
+                  <input type="date" value={form.startDate}
+                    onChange={e => setForm({ ...form, startDate: e.target.value })}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="text-slate-400 text-xs mb-1 block">End Date</label>
+                  <input type="date" value={form.endDate}
+                    onChange={e => setForm({ ...form, endDate: e.target.value })}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button onClick={handleAddProject}
+                className="flex-1 py-3 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-medium transition-all">
+                Create Project
+              </button>
+              <button onClick={() => { setShowAddModal(false); setFormError(''); }}
+                className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
