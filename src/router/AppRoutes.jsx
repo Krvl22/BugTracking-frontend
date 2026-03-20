@@ -111,7 +111,8 @@ const router = createBrowserRouter([
       { path: "/admin/analytics", element: <AdminAnalytics /> }, // ← NEW
       { path: "/admin/settings",  element: <AdminSettings /> },  // ← NEW
       { path: "/admin/users/:id", element: <AdminUserDetails /> },
-      { path: "/admin/projects/:id", element: <AdminProjectDetails / >},
+      { path: "/admin/projects/:id", element: <AdminProjectDetails /> },
+
       { path: "/managerdashboard",   element: <ManagerDashboard /> },
       { path: "/developerdashboard", element: <DeveloperDashboard /> },
       { path: "/testerdashboard",    element: <TesterDashboard /> },

@@ -145,7 +145,7 @@ const AdminUserDetails = () => {
       <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20">
           <div className="flex items-center justify-between mb-8 px-3">
-            <h2 className="text-xl font-bold text-white">Bug Tracker</h2>
+            <Link to="/admindashboard" className="text-xl font-bold text-white hover:text-cyan-300 transition-colors">Bug Tracker</Link>            
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -207,8 +207,7 @@ const AdminUserDetails = () => {
                   <p className="text-slate-300 text-sm capitalize">{user.role?.replace('_', ' ')}</p>
                 </div>
               </div>
-              <button onClick={handleLogout}
-                className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
+              <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
                 Logout
               </button>
             </div>
