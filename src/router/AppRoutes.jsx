@@ -16,7 +16,6 @@ import AdminUserDetails    from "../pages/admin/AdminUserDetails";
 import AdminProjectDetails from "../pages/admin/AdminProjectDetails";
 
 import ManagerDashboard   from "../components/projectManager/ManagerDashboard";
-import ManagerProject from "../pages/manager/ManagerProjects";
 import ManagerProjects from "../pages/manager/ManagerProjects";
 import ManagerBugs from "../pages/manager/ManagerBugs";
 import ManagerReports from "../pages/manager/ManagerReports";
@@ -24,8 +23,14 @@ import ManagerTasks from "../pages/manager/ManagerTasks";
 import ManagerTeam from "../pages/manager/ManagerTeams";
 
 import DeveloperDashboard from "../components/developer/DeveloperDashboard";
+import DeveloperProjects from "../pages/developer/DeveloperProjects";
+import DeveloperBugs from "../pages/developer/DeveloperBugs";
+import DeveloperTasks from "../pages/developer/DeveloperTasks";
 
 import TesterDashboard    from "../components/tester/TesterDashboard";
+import TesterBugs from "../pages/tester/TesterBugs";
+import TesterReports from "../pages/tester/TesterReports";
+import TesterTasks from "../pages/tester/TesterTasks";
 
 const router = createBrowserRouter([
 
@@ -64,14 +69,14 @@ const router = createBrowserRouter([
   ]
 },
 
-// TEMPORARY - outside protection
-{ path: "/manager/projects", element: <ManagerProject /> },
-
   // ── Developer Only ─────────────────────────────────────────
   {
     element: <ProtectedRoutes userRoles={["developer"]} />,
     children: [
       { path: "/developerdashboard", element: <DeveloperDashboard /> },
+      { path: "/developer/projects", element: <DeveloperProjects /> },
+      { path: "/developer/tasks", element: <DeveloperTasks /> },
+      { path: "/developer/bugs", element: <DeveloperBugs /> },
     ]
   },
 
@@ -80,6 +85,9 @@ const router = createBrowserRouter([
     element: <ProtectedRoutes userRoles={["tester"]} />,
     children: [
       { path: "/testerdashboard", element: <TesterDashboard /> },
+      { path: "/tester/bugs", element: <TesterBugs /> },
+      { path: "/tester/tasks", element: <TesterTasks /> },
+      { path: "/tester/reports", element: <TesterReports /> },
     ]
   },
 

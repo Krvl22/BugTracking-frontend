@@ -1,25 +1,24 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+import { useNavigate } from 'react-router-dom'
+import DeveloperSidebar from '../../components/developer/DeveloperSidebar'
 
-const ManagerProjects = () => {
+const DeveloperProjects = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
- // const user = JSON.parse(localStorage.getItem("user") || "{}")
+  const user = JSON.parse(localStorage.getItem("user") || "{}")
 
   const handleLogout = () => { localStorage.clear(); navigate("/") }
 
   useEffect(() => {
     const fetchProjects = async () => {
       const token = localStorage.getItem("token")
-      const res = await fetch("http://localhost:3000/manager/projects", {
+      const res = await fetch(`http://localhost:3000/developer/projects?userId=${user._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = await res.json()
-      console.log("Projects:", data)
-      if (data.success) setProjects(data.data.projects)
+      if (data.success) setProjects(data.data)
       setLoading(false)
     }
     fetchProjects()
@@ -38,7 +37,7 @@ const ManagerProjects = () => {
         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700" />
       </div>
 
-      <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <DeveloperSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div className="lg:ml-64">
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
@@ -49,8 +48,8 @@ const ManagerProjects = () => {
               </svg>
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white">Projects</h1>
-              <p className="text-slate-300 text-sm">Manage all your projects</p>
+              <h1 className="text-2xl font-bold text-white">My Projects</h1>
+              <p className="text-slate-300 text-sm">Projects you are part of</p>
             </div>
           </div>
           <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
@@ -58,32 +57,30 @@ const ManagerProjects = () => {
           </button>
         </header>
 
-        <main className="p-4 lg:p-8 relative z-10">
+        <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
-          {/* Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          {/* Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { label: 'Total Projects', value: projects.length, color: 'from-blue-500 to-cyan-500' },
-              { label: 'Active',         value: projects.filter(p => p.status === 'active').length, color: 'from-green-500 to-emerald-500' },
-              { label: 'Completed',      value: projects.filter(p => p.status === 'completed').length, color: 'from-purple-500 to-pink-500' },
+              { label: 'Total Projects', value: projects.length,                                        color: 'from-blue-500 to-cyan-500' },
+              { label: 'Active',         value: projects.filter(p => p.status === 'active').length,     color: 'from-green-500 to-emerald-500' },
+              { label: 'Completed',      value: projects.filter(p => p.status === 'completed').length,  color: 'from-purple-500 to-pink-500' },
             ].map((s, i) => (
               <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-                <div className={`w-10 h-10 rounded-xl bg-linear-to-r ${s.color} flex items-center justify-center text-white mb-3`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                </div>
                 <p className="text-slate-300 text-sm mb-1">{s.label}</p>
                 <p className="text-3xl font-bold text-white">{s.value}</p>
+                <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
+                  <div className={`h-full bg-linear-to-r ${s.color}`} style={{ width: projects.length ? `${(s.value / projects.length) * 100}%` : '0%' }} />
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Projects List */}
+          {/* Projects */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <h2 className="text-xl font-bold text-white mb-6">All Projects</h2>
             {projects.length === 0 ? (
-              <p className="text-slate-400">No projects found.</p>
+              <p className="text-slate-400">You are not assigned to any projects yet.</p>
             ) : (
               <div className="space-y-4">
                 {projects.map((project) => (
@@ -103,16 +100,13 @@ const ManagerProjects = () => {
                           <span>Due: <span className="text-slate-300">{project.endDate ? new Date(project.endDate).toLocaleDateString() : 'No deadline'}</span></span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-                          project.status === 'active'    ? 'bg-green-500/20 text-green-400' :
-                          project.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
-                          'bg-yellow-500/20 text-yellow-400'
-                        }`}>{project.status}</span>
-                      </div>
+                      <span className={`px-4 py-1.5 rounded-full text-sm font-medium shrink-0 ${
+                        project.status === 'active'    ? 'bg-green-500/20 text-green-400' :
+                        project.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
+                        'bg-yellow-500/20 text-yellow-400'
+                      }`}>{project.status}</span>
                     </div>
 
-                    {/* Team members avatars */}
                     {project.teamMembers?.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2">
                         <span className="text-slate-400 text-xs mr-1">Team:</span>
@@ -122,11 +116,6 @@ const ManagerProjects = () => {
                               {member.firstName?.charAt(0)}
                             </div>
                           ))}
-                          {project.teamMembers.length > 5 && (
-                            <div className="w-7 h-7 rounded-full bg-white/10 border-2 border-slate-900 flex items-center justify-center text-white text-xs">
-                              +{project.teamMembers.length - 5}
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}
@@ -141,4 +130,4 @@ const ManagerProjects = () => {
   )
 }
 
-export default ManagerProjects
+export default DeveloperProjects

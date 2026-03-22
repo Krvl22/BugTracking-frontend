@@ -1,0 +1,62 @@
+import { Link, useLocation } from "react-router-dom"
+
+const NAV_ITEMS = [
+  { name: 'Dashboard',     path: '/testerdashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+  { name: 'Tasks to Test', path: '/tester/tasks',    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+  { name: 'My Bugs',       path: '/tester/bugs',     icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  { name: 'Reports',       path: '/tester/reports',  icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+]
+
+const TesterSidebar = ({ sidebarOpen, setSidebarOpen }) => {
+  const location = useLocation()
+  const user = JSON.parse(localStorage.getItem("user") || "{}")
+
+  return (
+    <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+      <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20 flex flex-col">
+        <div className="flex items-center justify-between mb-8 px-3">
+          <Link to="/testerdashboard" className="text-xl font-bold text-white hover:text-cyan-300 transition-colors">
+            Bug Tracker
+          </Link>
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <nav className="space-y-1 flex-1">
+          {NAV_ITEMS.map((item) => (
+            <Link key={item.name} to={item.path}
+              className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                location.pathname === item.path
+                  ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
+                  : 'text-slate-300 hover:bg-white/10'
+              }`}>
+              <svg className="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+              </svg>
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="mt-4">
+          <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
+                <p className="text-slate-400 text-xs truncate">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+export default TesterSidebar
