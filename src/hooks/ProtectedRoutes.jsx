@@ -37,24 +37,16 @@
 
 // export default ProtectedRoutes;
 
+import { Navigate, Outlet } from "react-router-dom"
 
-import { Navigate } from "react-router-dom";
+const ProtectedRoutes = ({ userRoles }) => {
+  const token = localStorage.getItem("token")
+  const role  = localStorage.getItem("role")
 
-const ProtectedRoutes = ({ userRoles, children }) => {
-  const token = localStorage.getItem("token");
-  let role = localStorage.getItem("role");
+  if (!token)                    return <Navigate to="/" />
+  if (!userRoles.includes(role)) return <Navigate to="/" />
 
-  role = role?.trim().toLowerCase();
+  return <Outlet />
+}
 
-  if (!token) return <Navigate to="/" replace />;
-
-  if (!userRoles.map(r => r.toLowerCase()).includes(role)) {
-    return <Navigate to="/" replace />;
-  }
-  console.log("TOKEN:", token);
-console.log("ROLE:", role);
-console.log("ALLOWED:", userRoles);
-  return children;
-};
-
-export default ProtectedRoutes;
+export default ProtectedRoutes

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from "react-router-dom"; // ✅ added
+import { useNavigate , Link } from "react-router-dom"; // ✅ added
 
 const TesterDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,6 +28,7 @@ const TesterDashboard = () => {
     { id: 'BUG-202', title: 'Image upload fails for PNG files', status: 'In Progress', priority: 'Medium', assignedTo: 'Sarah Smith', reported: '2 days ago' },
     { id: 'BUG-203', title: 'API timeout on large requests', status: 'Fixed', priority: 'Critical', assignedTo: 'Mike Johnson', reported: '3 days ago' },
   ];
+  const user = JSON.parse(localStorage.getItem("user"))
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -40,7 +41,9 @@ const TesterDashboard = () => {
       <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20">
           <div className="flex items-center justify-between mb-8 px-3">
-            <h2 className="text-xl font-bold text-white">Bug Tracker</h2>
+            <Link to="/admindashboard" className="text-xl font-bold text-white hover:text-cyan-300 transition-colors">
+              Bug Tracker
+            </Link>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -77,11 +80,13 @@ const TesterDashboard = () => {
             <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                  T
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </div>
                 <div className="flex-1">
-                  <p className="text-white text-sm font-medium">Tester</p>
-                  <p className="text-slate-400 text-xs">tester@company.com</p>
+                  <p className="text-white text-sm font-medium">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-slate-400 text-xs">{user?.email}</p>
                 </div>
               </div>
             </div>
