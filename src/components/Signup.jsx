@@ -325,6 +325,7 @@ const ROLES = [
   { value: "developer",       label: "Developer" },
   { value: "tester",          label: "Tester" },
   { value: "project_manager", label: "Project Manager" },
+  { value: "admin", label: "Admin" },
 ];
 
 const getStrength = (pwd) => {
@@ -473,7 +474,7 @@ const Signup = () => {
             </div>
 
             {/* Role — 3 options, no Admin */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {ROLES.map(({ value, label }) => (
                 <button
                   key={value}

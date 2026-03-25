@@ -10,7 +10,6 @@ const TesterTasks = () => {
   const [reportingTask, setReportingTask] = useState(null)
   const [bugForm, setBugForm] = useState({ comment: '', bugSeverity: 'medium' })
   const navigate = useNavigate()
- // const user = JSON.parse(localStorage.getItem("user") || "{}")
 
   const handleLogout = () => { localStorage.clear(); navigate("/") }
 

@@ -152,9 +152,13 @@ const AdminDashboard = () => {
           <div className="mt-4">
             <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
-                  {storedUser.firstName?.charAt(0) || 'A'}
-                </div>
+                 {storedUser?.profilePic ? (
+                    <img src={storedUser.profilePic} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
+                      {storedUser.firstName?.charAt(0) || 'A'}
+                    </div>
+                  )}
                 <div className="min-w-0">
                   <p className="text-white text-sm font-medium truncate">{storedUser.firstName} {storedUser.lastName}</p>
                   <p className="text-slate-400 text-xs truncate">{storedUser.email}</p>
