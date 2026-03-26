@@ -143,7 +143,7 @@ const AdminProjectDetails = () => {
 
       {/* Sidebar */}
       <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20">
+        <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20 relative">
           <div className="flex items-center justify-between mb-8 px-3">
             <Link to="/admindashboard" className="text-xl font-bold text-white hover:text-cyan-300 transition-colors">Bug Tracker</Link>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
@@ -170,19 +170,22 @@ const AdminProjectDetails = () => {
 
           {/* ── FIXED: Real admin name from localStorage ── */}
           <div className="absolute bottom-4 left-3 right-3">
-            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
+            <Link to="/admin/settings" className="block backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 transition-all">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                  {storedUser.firstName?.charAt(0) || 'A'}
-                </div>
+                {storedUser.profilePic ? (
+                  <img src={storedUser.profilePic} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">{storedUser.firstName?.charAt(0)||'A'}</div>
+                )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">
-                    {storedUser.firstName} {storedUser.lastName}
-                  </p>
+                  <p className="text-white text-sm font-medium truncate">{storedUser.firstName} {storedUser.lastName}</p>
                   <p className="text-slate-400 text-xs truncate">{storedUser.email}</p>
                 </div>
+                <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </aside>

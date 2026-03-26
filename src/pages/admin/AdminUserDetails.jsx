@@ -16,6 +16,9 @@ const AdminUserDetails = () => {
   const token     = localStorage.getItem('token');
   const headers   = { Authorization: `Bearer ${token}` };
 
+  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+
   const navItems = [
     { name: 'Dashboard', path: '/admindashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
     { name: 'Users',     path: '/admin/users',     icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
@@ -143,7 +146,7 @@ const AdminUserDetails = () => {
 
       {/* Sidebar */}
       <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20">
+        <div className="h-full px-3 py-4 overflow-y-auto backdrop-blur-xl bg-white/10 border-r border-white/20 relative">
           <div className="flex items-center justify-between mb-8 px-3">
             <Link to="/admindashboard" className="text-xl font-bold text-white hover:text-cyan-300 transition-colors">Bug Tracker</Link>            
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
@@ -168,15 +171,22 @@ const AdminUserDetails = () => {
             ))}
           </nav>
           <div className="absolute bottom-4 left-3 right-3">
-            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
+            <Link to="/admin/settings" className="block backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 transition-all">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">A</div>
-                <div className="flex-1">
-                  <p className="text-white text-sm font-medium">Admin User</p>
-                  <p className="text-slate-400 text-xs">admin@company.com</p>
+                {storedUser.profilePic ? (
+                  <img src={storedUser.profilePic} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">{storedUser.firstName?.charAt(0)||'A'}</div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{storedUser.firstName} {storedUser.lastName}</p>
+                  <p className="text-slate-400 text-xs truncate">{storedUser.email}</p>
                 </div>
+                <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </aside>

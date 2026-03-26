@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid
+} from "recharts";
 
 // ── SVG Icons ──────────────────────────────────────────────────────
 const UsersIcon  = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>;
@@ -51,7 +55,17 @@ const AdminAnalytics = () => {
   const location   = useLocation();
   const token      = localStorage.getItem('token');
   const headers    = { Authorization: `Bearer ${token}` };
-  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'))
+
+useEffect(() => {
+  const sync = () => setCurrentUser(JSON.parse(localStorage.getItem('user') || '{}'))
+  window.addEventListener('storage', sync)
+  window.addEventListener('userUpdated', sync)
+  return () => {
+    window.removeEventListener('storage', sync)
+    window.removeEventListener('userUpdated', sync)
+  }
+}, [])
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -81,6 +95,19 @@ const AdminAnalytics = () => {
   }, []);
 
   const handleLogout = () => { localStorage.clear(); navigate('/'); };
+
+  // Chart Data
+  const bugChartData = Object.entries(bugSeverityCounts).map(([key, value]) => ({
+    name: key,
+    value
+  }));
+
+  const taskChartData = Object.entries(taskStatusCounts).map(([key, value]) => ({
+    name: key,
+    value
+  }));
+
+const COLORS = ["#22c55e", "#eab308", "#f97316", "#ef4444"];
 
   // ── Computed ──────────────────────────────────────────────────────
   const roleCounts        = users.reduce((a, u)    => ({ ...a, [u.role]:         (a[u.role]         || 0) + 1 }), {});
@@ -142,17 +169,27 @@ const AdminAnalytics = () => {
           </nav>
           {/* Real admin name */}
           <div className="mt-4">
-            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
+            <Link
+              to="/admin/settings"
+              className="block backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 transition-all"
+            >
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
-                  {storedUser.firstName?.charAt(0) || 'A'}
+                {currentUser?.profilePic ? (
+                  <img src={currentUser.profilePic} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
+                    {currentUser.firstName?.charAt(0) || 'A'}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-sm font-medium truncate">{currentUser.firstName} {currentUser.lastName}</p>
+                  <p className="text-slate-400 text-xs truncate">{currentUser.email}</p>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{storedUser.firstName} {storedUser.lastName}</p>
-                  <p className="text-slate-400 text-xs truncate">{storedUser.email}</p>
-                </div>
+                <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </aside>
@@ -258,6 +295,55 @@ const AdminAnalytics = () => {
                   </div>
               }
             </div>
+          </div>
+            
+          {/* 4. Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Bug Severity Pie Chart */}
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+              <h2 className="text-xl font-bold text-white mb-4">Bug Severity Chart</h2>
+
+              {!bugs.length ? (
+                <p className="text-slate-400 text-sm">No bug data</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={bugChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      outerRadius={80}
+                    >
+                      {bugChartData.map((entry, index) => (
+                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Task Status Bar Chart */}
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+              <h2 className="text-xl font-bold text-white mb-4">Task Status Chart</h2>
+
+              {!tasks.length ? (
+                <p className="text-slate-400 text-sm">No task data</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={taskChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="name" stroke="#cbd5f5" />
+                    <YAxis stroke="#cbd5f5" />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#38bdf8" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
           </div>
 
           {/* 5. Most Active Users + Recent Activity */}

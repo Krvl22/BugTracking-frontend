@@ -41,6 +41,7 @@ const AdminSettings = () => {
       const data = await res.json();
       if (data.success) {
         localStorage.setItem('user', JSON.stringify({ ...storedUser, firstName: profile.firstName, lastName: profile.lastName }));
+        window.dispatchEvent(new Event('userUpdated')) // ✅ add this
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       }
@@ -74,6 +75,7 @@ const AdminSettings = () => {
 
   const handleUploadPhoto = async (e) => {
     const file = e.target.files[0]
+    
     if (!file) return
     setPreview(URL.createObjectURL(file))
     const formData = new FormData()
@@ -87,6 +89,7 @@ const AdminSettings = () => {
     if (data.success) {
       localStorage.setItem("user", JSON.stringify(data.data))
       setPreview(data.data.profilePic)
+      window.dispatchEvent(new Event('userUpdated')) // ✅ add this
     }
     e.target.value = ""
   }
@@ -100,6 +103,7 @@ const AdminSettings = () => {
     if (data.success) {
       localStorage.setItem("user", JSON.stringify({ ...storedUser, profilePic: null }))
       setPreview(null)
+      window.dispatchEvent(new Event('userUpdated')) // ✅ add this
     }
   }
 
@@ -140,7 +144,7 @@ const AdminSettings = () => {
             ))}
           </nav>
 
-          <div className="mt-4">
+          {/* <div className="mt-4">
             <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
               <div className="flex items-center space-x-3">
                 {preview ? (
@@ -156,6 +160,29 @@ const AdminSettings = () => {
                 </div>
               </div>
             </div>
+          </div> */}
+          <div className="mt-4">
+            <Link
+              to="/admin/settings"
+              className="block backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 transition-all"
+            >
+              <div className="flex items-center space-x-3">
+                {preview ? (
+                  <img src={preview} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
+                    {profile.firstName?.charAt(0) || 'A'}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{profile.firstName} {profile.lastName}</p>
+                  <p className="text-slate-400 text-xs truncate">{profile.email}</p>
+                </div>
+                <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
           </div>
         </div>
       </aside>

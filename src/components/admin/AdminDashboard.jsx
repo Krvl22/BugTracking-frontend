@@ -47,7 +47,18 @@ const AdminDashboard = () => {
   const notifRef   = useRef(null)
   const token      = localStorage.getItem('token')
   const headers    = { Authorization: `Bearer ${token}` }
-  const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const [currentUser, setCurrentUser] = useState(() =>
+  JSON.parse(localStorage.getItem('user') || '{}')
+  )
+  useEffect(() => {
+  const sync = () => setCurrentUser(JSON.parse(localStorage.getItem('user') || '{}'))
+  window.addEventListener('storage', sync)
+  window.addEventListener('userUpdated', sync)
+  return () => {
+    window.removeEventListener('storage', sync)
+    window.removeEventListener('userUpdated', sync)
+  }
+  }, [])
 
   useEffect(() => {
     const handler = (e) => {
@@ -150,21 +161,27 @@ const AdminDashboard = () => {
           </nav>
 
           <div className="mt-4">
-            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
+            <Link
+              to="/admin/settings"
+              className="block backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 transition-all"
+            >
               <div className="flex items-center space-x-3">
-                 {storedUser?.profilePic ? (
-                    <img src={storedUser.profilePic} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
-                      {storedUser.firstName?.charAt(0) || 'A'}
-                    </div>
-                  )}
-                <div className="min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{storedUser.firstName} {storedUser.lastName}</p>
-                  <p className="text-slate-400 text-xs truncate">{storedUser.email}</p>
+                {currentUser?.profilePic ? (
+                  <img src={currentUser.profilePic} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
+                    {currentUser.firstName?.charAt(0) || 'A'}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-sm font-medium truncate">{currentUser.firstName} {currentUser.lastName}</p>
+                  <p className="text-slate-400 text-xs truncate">{currentUser.email}</p>
                 </div>
+                <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </aside>
@@ -182,7 +199,7 @@ const AdminDashboard = () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-              <p className="text-slate-300 text-sm">Welcome back, {storedUser.firstName || 'Admin'}!</p>
+              <p className="text-slate-300 text-sm">Welcome back, {currentUser.firstName || 'Admin'}!</p>
             </div>
           </div>
 
