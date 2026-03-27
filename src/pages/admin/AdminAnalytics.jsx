@@ -96,19 +96,6 @@ useEffect(() => {
 
   const handleLogout = () => { localStorage.clear(); navigate('/'); };
 
-  // Chart Data
-  const bugChartData = Object.entries(bugSeverityCounts).map(([key, value]) => ({
-    name: key,
-    value
-  }));
-
-  const taskChartData = Object.entries(taskStatusCounts).map(([key, value]) => ({
-    name: key,
-    value
-  }));
-
-const COLORS = ["#22c55e", "#eab308", "#f97316", "#ef4444"];
-
   // ── Computed ──────────────────────────────────────────────────────
   const roleCounts        = users.reduce((a, u)    => ({ ...a, [u.role]:         (a[u.role]         || 0) + 1 }), {});
   const projStatusCounts  = projects.reduce((a, p) => ({ ...a, [p.status]:       (a[p.status]       || 0) + 1 }), {});
@@ -126,6 +113,20 @@ const COLORS = ["#22c55e", "#eab308", "#f97316", "#ef4444"];
       return a;
     }, {})
   ).sort((a, b) => b.count - a.count).slice(0, 5);
+
+  
+  // Chart Data with DB Connected
+  const bugChartData = Object.entries(bugSeverityCounts).map(([key, value]) => ({
+    name: key,
+    value
+  }));
+
+  const taskChartData = Object.entries(taskStatusCounts).map(([key, value]) => ({
+    name: key,
+    value
+  }));
+
+const COLORS = ["#22c55e", "#eab308", "#f97316", "#ef4444"];
 
   if (loading) return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">

@@ -21,6 +21,8 @@ import ManagerBugs from "../pages/manager/ManagerBugs";
 import ManagerReports from "../pages/manager/ManagerReports";
 import ManagerTasks from "../pages/manager/ManagerTasks";
 import ManagerTeam from "../pages/manager/ManagerTeams";
+import ManagerProjectDetails from "../pages/manager/ManagerProjectDetails";
+import ManagerSettings from "../pages/manager/ManagerSettings";
 
 import DeveloperDashboard from "../components/developer/DeveloperDashboard";
 import DeveloperProjects from "../pages/developer/DeveloperProjects";
@@ -65,6 +67,8 @@ const router = createBrowserRouter([
     { path: "/manager/reports", element: <ManagerReports /> },
     { path: "/manager/tasks", element: <ManagerTasks /> },
     { path: "/manager/team", element: <ManagerTeam /> },
+    { path: "/manager/projects/:id", element:<ManagerProjectDetails /> },
+    {path: "/manager/settings",  element:<ManagerSettings /> }
 
   ]
 },
