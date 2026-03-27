@@ -3,31 +3,28 @@ import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 
 const severityColor = (s) => ({
-  low:      'bg-green-500/20 text-green-400',
-  medium:   'bg-yellow-500/20 text-yellow-400',
-  high:     'bg-orange-500/20 text-orange-400',
-  critical: 'bg-red-500/20 text-red-400',
+  low: 'bg-green-500/20 text-green-400', medium: 'bg-yellow-500/20 text-yellow-400',
+  high: 'bg-orange-500/20 text-orange-400', critical: 'bg-red-500/20 text-red-400',
 }[s] || 'bg-slate-500/20 text-slate-400')
 
 const ManagerBugs = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+  const [data, setData]               = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [filter, setFilter]           = useState('all')
   const navigate = useNavigate()
 
-  const handleLogout = () => { localStorage.clear(); navigate("/") }
+  const handleLogout = () => { localStorage.clear(); navigate('/') }
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem("token")
-      const res = await fetch("http://localhost:3000/manager/bugs", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const result = await res.json()
-      console.log("Bugs:", result)
-      if (result.success) setData(result.data)
-      setLoading(false)
+      const token = localStorage.getItem('token')
+      try {
+        const res    = await fetch('http://localhost:3000/manager/bugs', { headers: { Authorization: `Bearer ${token}` } })
+        const result = await res.json()
+        if (result.success) setData(result.data || [])
+      } catch (err) { console.error(err) }
+      finally { setLoading(false) }
     }
     fetchData()
   }, [])
@@ -38,9 +35,9 @@ const ManagerBugs = () => {
     </div>
   )
 
-  const filtered = filter === 'all' ? data :
+  const filtered = filter === 'all'      ? data :
     filter === 'resolved' ? data.filter(b => b.resolved) :
-    filter === 'open' ? data.filter(b => !b.resolved) :
+    filter === 'open'     ? data.filter(b => !b.resolved) :
     data.filter(b => b.bugSeverity === filter)
 
   return (
@@ -75,37 +72,34 @@ const ManagerBugs = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Total Bugs',  value: data.length,                                            color: 'from-blue-500 to-cyan-500' },
-              { label: 'Open',        value: data.filter(b => !b.resolved).length,                   color: 'from-red-500 to-orange-500' },
-              { label: 'Resolved',    value: data.filter(b => b.resolved).length,                    color: 'from-green-500 to-emerald-500' },
-              { label: 'Critical',    value: data.filter(b => b.bugSeverity === 'critical').length,   color: 'from-red-600 to-red-800' },
+              { label: 'Total Bugs', value: data.length,                                          color: 'from-blue-500 to-cyan-500' },
+              { label: 'Open',       value: data.filter(b => !b.resolved).length,                 color: 'from-red-500 to-orange-500' },
+              { label: 'Resolved',   value: data.filter(b => b.resolved).length,                  color: 'from-green-500 to-emerald-500' },
+              { label: 'Critical',   value: data.filter(b => b.bugSeverity === 'critical').length, color: 'from-red-600 to-red-800' },
             ].map((s, i) => (
               <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-5 border border-white/20">
                 <p className="text-slate-300 text-sm mb-1">{s.label}</p>
                 <p className="text-3xl font-bold text-white">{s.value}</p>
                 <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                  <div className={`h-full bg-linear-to-r ${s.color}`} style={{ width: data.length ? `${(s.value/data.length)*100}%` : '0%' }} />
+                  <div className={`h-full bg-linear-to-r ${s.color}`} style={{ width: data.length ? `${(s.value / data.length) * 100}%` : '0%' }} />
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Bugs list */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               <h2 className="text-xl font-bold text-white">All Bug Reports</h2>
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All</option>
-                <option value="open">Open</option>
-                <option value="resolved">Resolved</option>
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
+              {/* FIX: bg-slate-800 ensures dropdown options are visible */}
+              <select value={filter} onChange={e => setFilter(e.target.value)}
+                className="px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
+                <option value="all"      className="bg-slate-800 text-white">All</option>
+                <option value="open"     className="bg-slate-800 text-white">Open</option>
+                <option value="resolved" className="bg-slate-800 text-white">Resolved</option>
+                <option value="critical" className="bg-slate-800 text-white">Critical</option>
+                <option value="high"     className="bg-slate-800 text-white">High</option>
+                <option value="medium"   className="bg-slate-800 text-white">Medium</option>
+                <option value="low"      className="bg-slate-800 text-white">Low</option>
               </select>
             </div>
 
@@ -113,35 +107,34 @@ const ManagerBugs = () => {
               <p className="text-slate-400">No bugs found.</p>
             ) : (
               <div className="space-y-3">
-                {filtered.map((bug) => (
+                {filtered.map(bug => (
                   <div key={bug._id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all">
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${severityColor(bug.bugSeverity)}`}>
-                            {bug.bugSeverity}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            bug.resolved ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {bug.resolved ? 'Resolved' : 'Open'}
-                          </span>
-                        </div>
-                        <p className="text-white font-medium mb-2">{bug.comment}</p>
-                        <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-                          <span>Task: <span className="text-blue-400 font-mono">{bug.task?.issueKey ?? 'N/A'}</span></span>
-                          <span>Title: <span className="text-slate-300">{bug.task?.title ?? 'N/A'}</span></span>
-                          <span>Reported by: <span className="text-slate-300">{bug.commentedBy?.firstName} {bug.commentedBy?.lastName}</span></span>
-                          {bug.createdAt && (
-                            <span>Date: <span className="text-slate-300">{new Date(bug.createdAt).toLocaleDateString()}</span></span>
-                          )}
-                        </div>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${severityColor(bug.bugSeverity)}`}>
+                        {bug.bugSeverity}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${bug.resolved ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {bug.resolved ? 'Resolved' : 'Open'}
+                      </span>
+                    </div>
+                    <p className="text-white font-medium mb-2">{bug.comment}</p>
+                    <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                      <span>Task: <span className="text-blue-400 font-mono">{bug.task?.issueKey ?? 'N/A'}</span></span>
+                      <span>Title: <span className="text-slate-300">{bug.task?.title ?? 'N/A'}</span></span>
+                      <span>Reported by: <span className="text-slate-300">{bug.commentedBy?.firstName} {bug.commentedBy?.lastName}</span></span>
+                      {bug.createdAt && <span>Date: <span className="text-slate-300">{new Date(bug.createdAt).toLocaleDateString()}</span></span>}
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Note: Managers view bugs but resolution is done by testers/developers */}
+          <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-4 border border-white/10">
+            <p className="text-slate-400 text-sm text-center">
+              💡 Bug resolution is handled by Testers. Managers can view all bugs and assign fix tasks to developers.
+            </p>
           </div>
         </main>
       </div>

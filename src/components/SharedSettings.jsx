@@ -1,23 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 
-// Profile/Account Settings page for Project Manager
-// Uses PATCH /users/profile-pic and PATCH /users/profile-pic/remove (per UserRoutes.js)
-const ManagerSettings = () => {
+// Reusable Settings page — pass sidebar component and role label as props
+// Usage: <SharedSettings Sidebar={TesterSidebar} role="Tester" dashPath="/testerdashboard" />
+
+const SharedSettings = ({ Sidebar, role, dashPath }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [saving, setSaving]           = useState(false)
   const [uploading, setUploading]     = useState(false)
   const [message, setMessage]         = useState({ text: '', ok: true })
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'))
   const [form, setForm]               = useState({ firstName: '', lastName: '' })
-  const [passwords, setPasswords]     = useState({ current: '', newPass: '', confirm: '' })
   const fileRef  = useRef(null)
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')
   const headers  = { Authorization: `Bearer ${token}` }
 
-  // Sync form when user data changes
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem('user') || '{}')
     setCurrentUser(u)
@@ -45,7 +43,6 @@ const ManagerSettings = () => {
     setTimeout(() => setMessage({ text: '', ok: true }), 4000)
   }
 
-  // Save name changes — PUT /users/:id
   const handleSave = async () => {
     if (!form.firstName.trim() || !form.lastName.trim()) {
       showMsg('First and last name are required', false); return
@@ -63,7 +60,7 @@ const ManagerSettings = () => {
         localStorage.setItem('user', JSON.stringify(updated))
         setCurrentUser(updated)
         window.dispatchEvent(new Event('userUpdated'))
-        showMsg('Profile updated!')
+        showMsg('Profile updated successfully!')
       } else {
         showMsg(data.message || 'Failed to update', false)
       }
@@ -71,25 +68,11 @@ const ManagerSettings = () => {
     finally { setSaving(false) }
   }
 
-  // Change password — no dedicated endpoint in UserController so we use PUT /:id
-  // Note: updateUser deletes password from body, so password change needs its own route
-  // For now we show a message directing to forgot password flow
-  const handleChangePassword = async () => {
-    if (!passwords.newPass || !passwords.confirm) { showMsg('Fill in all password fields', false); return }
-    if (passwords.newPass !== passwords.confirm)  { showMsg('Passwords do not match', false); return }
-    if (passwords.newPass.length < 6)             { showMsg('Password must be at least 6 characters', false); return }
-    // UserController.updateUser strips password, so we cannot change it via PUT /:id
-    // Direct user to forgot-password flow
-    showMsg('To change your password, use the Forgot Password link on the login page.', false)
-    setPasswords({ current: '', newPass: '', confirm: '' })
-  }
-
-  // Upload photo — PATCH /users/profile-pic (uses req.user._id from token)
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.startsWith('image/'))  { showMsg('Please select an image', false); return }
-    if (file.size > 2 * 1024 * 1024)     { showMsg('Image must be under 2MB', false); return }
+    if (!file.type.startsWith('image/')) { showMsg('Please select an image file', false); return }
+    if (file.size > 2 * 1024 * 1024)    { showMsg('Image must be under 2MB', false); return }
     setUploading(true)
     try {
       const fd = new FormData()
@@ -106,10 +89,9 @@ const ManagerSettings = () => {
         showMsg('Photo updated!')
       } else { showMsg(data.message || 'Upload failed', false) }
     } catch { showMsg('Server error', false) }
-    finally { setUploading(false) }
+    finally { setUploading(false); e.target.value = '' }
   }
 
-  // Remove photo — PATCH /users/profile-pic/remove
   const handleRemovePhoto = async () => {
     if (!currentUser.profilePic) return
     setUploading(true)
@@ -129,6 +111,11 @@ const ManagerSettings = () => {
     finally { setUploading(false) }
   }
 
+  const roleColor = {
+    tester:    'bg-orange-500/20 text-orange-400',
+    developer: 'bg-cyan-500/20 text-cyan-400',
+  }[currentUser.role] || 'bg-blue-500/20 text-blue-400'
+
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -136,7 +123,7 @@ const ManagerSettings = () => {
         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700" />
       </div>
 
-      <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div className="lg:ml-64">
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
@@ -151,7 +138,7 @@ const ManagerSettings = () => {
               <p className="text-slate-300 text-sm">Manage your profile</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
+          <button onClick={handleLogout} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-all">
             Logout
           </button>
         </header>
@@ -160,47 +147,61 @@ const ManagerSettings = () => {
 
           {/* Message banner */}
           {message.text && (
-            <div className={`px-4 py-3 rounded-xl text-sm font-medium border ${message.ok ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
+            <div className={`px-4 py-3 rounded-xl text-sm font-medium border ${
+              message.ok
+                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                : 'bg-red-500/20 text-red-400 border-red-500/30'
+            }`}>
               {message.text}
             </div>
           )}
 
-          {/* Profile Information */}
+          {/* Profile card */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <h2 className="text-xl font-bold text-white mb-6">Profile Information</h2>
 
-            {/* Avatar + buttons */}
+            {/* Avatar row */}
             <div className="flex items-center gap-5 mb-8">
               <div className="relative shrink-0">
                 {currentUser.profilePic ? (
                   <img src={currentUser.profilePic} className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white/20" alt="avatar" />
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white text-3xl font-bold ring-2 ring-white/20">
-                    {currentUser.firstName?.charAt(0) || 'M'}
+                    {currentUser.firstName?.charAt(0) || '?'}
                   </div>
                 )}
+                {/* Spinning upload overlay — from ManagerSettings */}
                 {uploading && (
-                  <div className="absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  <div className="absolute inset-0 rounded-2xl bg-black/60 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                     </svg>
                   </div>
                 )}
               </div>
+
               <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-lg">{currentUser.firstName} {currentUser.lastName}</p>
-                <p className="text-slate-400 text-sm mb-1">{currentUser.email}</p>
-                <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-blue-500/20 text-blue-400 mb-3">Project Manager</span>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                <div className="flex gap-3">
-                  <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                    className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl text-sm font-medium transition-all disabled:opacity-50">
+                <p className="text-white font-semibold text-lg truncate">{currentUser.firstName} {currentUser.lastName}</p>
+                <p className="text-slate-400 text-sm truncate mb-1">{currentUser.email}</p>
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium mb-3 ${roleColor}`}>
+                  {role}
+                </span>
+                <div className="flex items-center gap-3">
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                  >
                     {uploading ? 'Uploading…' : 'Change Photo'}
                   </button>
                   {currentUser.profilePic && (
-                    <button onClick={handleRemovePhoto} disabled={uploading}
-                      className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50">
+                    <button
+                      onClick={handleRemovePhoto}
+                      disabled={uploading}
+                      className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                    >
                       Remove
                     </button>
                   )}
@@ -234,13 +235,15 @@ const ManagerSettings = () => {
             </button>
           </div>
 
-          {/* Password section — note about limitation */}
+          {/* Change password note */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <h2 className="text-xl font-bold text-white mb-2">Change Password</h2>
-            <p className="text-slate-400 text-sm mb-6">To change your password, use the Forgot Password option on the login page. This ensures your account stays secure.</p>
+            <p className="text-slate-400 text-sm mb-4">
+              To change your password, use the Forgot Password option on the login page.
+            </p>
             <button onClick={() => { localStorage.clear(); navigate('/') }}
               className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all text-sm">
-              Go to Login (use Forgot Password)
+              Go to Login → Forgot Password
             </button>
           </div>
 
@@ -249,9 +252,9 @@ const ManagerSettings = () => {
             <h2 className="text-xl font-bold text-white mb-4">Account Info</h2>
             <div className="space-y-3 text-sm">
               {[
-                { label: 'Role',    value: 'Project Manager' },
-                { label: 'Status',  value: currentUser.status || 'active' },
-                { label: 'Joined',  value: currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : '—' },
+                { label: 'Role',   value: role },
+                { label: 'Status', value: currentUser.status || 'active' },
+                { label: 'Joined', value: currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between p-3 bg-white/5 rounded-xl border border-white/10">
                   <span className="text-slate-400">{label}</span>
@@ -267,4 +270,4 @@ const ManagerSettings = () => {
   )
 }
 
-export default ManagerSettings
+export default SharedSettings

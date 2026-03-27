@@ -4,24 +4,24 @@ import DeveloperSidebar from '../../components/developer/DeveloperSidebar'
 
 const DeveloperProjects = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [projects, setProjects] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [projects, setProjects]       = useState([])
+  const [loading, setLoading]         = useState(true)
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem("user") || "{}")
+  const user     = JSON.parse(localStorage.getItem('user') || '{}')
 
-  const handleLogout = () => { localStorage.clear(); navigate("/") }
+  const handleLogout = () => { localStorage.clear(); navigate('/') }
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      const token = localStorage.getItem("token")
-      const res = await fetch(`http://localhost:3000/developer/projects?userId=${user._id}`, {
+    const fetch_ = async () => {
+      const token = localStorage.getItem('token')
+      const res   = await fetch(`http://localhost:3000/developer/projects?userId=${user._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = await res.json()
       if (data.success) setProjects(data.data)
       setLoading(false)
     }
-    fetchProjects()
+    fetch_()
   }, [])
 
   if (loading) return (
@@ -62,21 +62,22 @@ const DeveloperProjects = () => {
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { label: 'Total Projects', value: projects.length,                                        color: 'from-blue-500 to-cyan-500' },
-              { label: 'Active',         value: projects.filter(p => p.status === 'active').length,     color: 'from-green-500 to-emerald-500' },
-              { label: 'Completed',      value: projects.filter(p => p.status === 'completed').length,  color: 'from-purple-500 to-pink-500' },
+              { label: 'Total Projects', value: projects.length,                                       color: 'from-blue-500 to-cyan-500' },
+              { label: 'Active',         value: projects.filter(p => p.status === 'active').length,    color: 'from-green-500 to-emerald-500' },
+              { label: 'Completed',      value: projects.filter(p => p.status === 'completed').length, color: 'from-purple-500 to-pink-500' },
             ].map((s, i) => (
               <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
                 <p className="text-slate-300 text-sm mb-1">{s.label}</p>
                 <p className="text-3xl font-bold text-white">{s.value}</p>
                 <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                  <div className={`h-full bg-linear-to-r ${s.color}`} style={{ width: projects.length ? `${(s.value / projects.length) * 100}%` : '0%' }} />
+                  <div className={`h-full bg-linear-to-r ${s.color}`}
+                    style={{ width: projects.length ? `${(s.value / projects.length) * 100}%` : '0%' }} />
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Projects */}
+          {/* Projects — clickable cards */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <h2 className="text-xl font-bold text-white mb-6">All Projects</h2>
             {projects.length === 0 ? (
@@ -84,7 +85,11 @@ const DeveloperProjects = () => {
             ) : (
               <div className="space-y-4">
                 {projects.map((project) => (
-                  <div key={project._id} className="bg-white/5 rounded-xl p-5 border border-white/10 hover:bg-white/10 transition-all">
+                  <div
+                    key={project._id}
+                    onClick={() => navigate(`/developer/projects/${project._id}`)}
+                    className="bg-white/5 rounded-xl p-5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+                  >
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
@@ -99,6 +104,7 @@ const DeveloperProjects = () => {
                           <span>Start: <span className="text-slate-300">{project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A'}</span></span>
                           <span>Due: <span className="text-slate-300">{project.endDate ? new Date(project.endDate).toLocaleDateString() : 'No deadline'}</span></span>
                         </div>
+                        <p className="text-slate-500 text-xs mt-2">Click to view details →</p>
                       </div>
                       <span className={`px-4 py-1.5 rounded-full text-sm font-medium shrink-0 ${
                         project.status === 'active'    ? 'bg-green-500/20 text-green-400' :
@@ -111,11 +117,17 @@ const DeveloperProjects = () => {
                       <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2">
                         <span className="text-slate-400 text-xs mr-1">Team:</span>
                         <div className="flex -space-x-2">
-                          {project.teamMembers.slice(0, 5).map((member, i) => (
-                            <div key={i} className="w-7 h-7 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 border-2 border-slate-900 flex items-center justify-center text-white text-xs font-bold">
+                          {project.teamMembers.slice(0, 6).map((member, i) => (
+                            <div key={i} title={`${member.firstName} ${member.lastName}`}
+                              className="w-7 h-7 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 border-2 border-slate-900 flex items-center justify-center text-white text-xs font-bold">
                               {member.firstName?.charAt(0)}
                             </div>
                           ))}
+                          {project.teamMembers.length > 6 && (
+                            <div className="w-7 h-7 rounded-full bg-white/10 border-2 border-slate-900 flex items-center justify-center text-white text-xs">
+                              +{project.teamMembers.length - 6}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

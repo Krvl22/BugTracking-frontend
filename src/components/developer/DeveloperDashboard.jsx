@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import DeveloperSidebar from './DeveloperSidebar'
+import DeveloperSidebar from '../../components/developer/DeveloperSidebar'
+import NotificationBell from '../../components/NotificationBell'
 
 const priorityColor = (p) => ({
   high:   'bg-red-500/20 text-red-400',
@@ -18,37 +19,46 @@ const severityColor = (s) => ({
 
 const DeveloperDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [tasks, setTasks] = useState([])
-  const [bugs, setBugs] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [tasks, setTasks]             = useState([])
+  const [bugs, setBugs]               = useState([])
+  const [loading, setLoading]         = useState(true)
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem("user") || "{}")
+  const user     = JSON.parse(localStorage.getItem('user') || '{}')
 
-  const handleLogout = () => { localStorage.clear(); navigate("/") }
+  const handleLogout = () => { localStorage.clear(); navigate('/') }
 
   useEffect(() => {
-    const getDashboardData = async () => {
-      const token = localStorage.getItem("token")
-
-      const tasksRes = await fetch(`http://localhost:3000/developer/tasks?userId=${user._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const tasksData = await tasksRes.json()
-      if (tasksData.success) setTasks(tasksData.data)
-
-      const bugsRes = await fetch(`http://localhost:3000/developer/bugs?userId=${user._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const bugsData = await bugsRes.json()
-      if (bugsData.success) setBugs(bugsData.data)
-
+    const fetch_ = async () => {
+      const token = localStorage.getItem('token')
+      const h     = { Authorization: `Bearer ${token}` }
+      const [tRes, bRes] = await Promise.all([
+        fetch(`http://localhost:3000/developer/tasks?userId=${user._id}`, { headers: h }),
+        fetch(`http://localhost:3000/developer/bugs?userId=${user._id}`,  { headers: h }),
+      ])
+      const [tData, bData] = await Promise.all([tRes.json(), bRes.json()])
+      if (tData.success) setTasks(tData.data)
+      if (bData.success) setBugs(bData.data)
       setLoading(false)
     }
-    getDashboardData()
+    fetch_()
   }, [])
 
+  // Mark task as in_progress
+  const handleMarkInProgress = async (taskId) => {
+    const token = localStorage.getItem('token')
+    const res   = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+      method:  'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ status: 'in_progress' }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: 'in_progress' } : t))
+    }
+  }
+
   const statCards = [
-    { label: 'Assigned Tasks', value: tasks.length,                                          color: 'from-blue-500 to-cyan-500',     icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+    { label: 'Assigned Tasks', value: tasks.length,                                         color: 'from-blue-500 to-cyan-500',     icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
     { label: 'In Progress',    value: tasks.filter(t => t.status === 'in_progress').length,  color: 'from-yellow-500 to-orange-500', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
     { label: 'Submitted',      value: tasks.filter(t => t.status === 'submitted').length,    color: 'from-purple-500 to-pink-500',   icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
     { label: 'Completed',      value: tasks.filter(t => t.status === 'completed').length,    color: 'from-green-500 to-emerald-500', icon: 'M5 13l4 4L19 7' },
@@ -82,23 +92,24 @@ const DeveloperDashboard = () => {
               <p className="text-slate-300 text-sm">Welcome back, {user?.firstName}!</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Notification bell */}
+            <NotificationBell />
+            <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
+              Logout
+            </button>
+          </div>
         </header>
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
-          {/* Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {statCards.map((stat, index) => (
-              <div key={index} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl bg-linear-to-r ${stat.color} flex items-center justify-center text-white`}>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
-                    </svg>
-                  </div>
+            {statCards.map((stat, i) => (
+              <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                <div className={`w-12 h-12 rounded-xl bg-linear-to-r ${stat.color} flex items-center justify-center text-white mb-4`}>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
+                  </svg>
                 </div>
                 <h3 className="text-slate-300 text-sm mb-1">{stat.label}</h3>
                 <p className="text-3xl font-bold text-white">{stat.value}</p>
@@ -108,11 +119,11 @@ const DeveloperDashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* My Tasks */}
+            {/* My Tasks — with Mark In Progress button */}
             <div className="lg:col-span-2 backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">My Tasks</h2>
-                <Link to="/developer/tasks" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">View All</Link>
+                <Link to="/developer/tasks" className="text-sm text-blue-400 hover:text-blue-300">View All</Link>
               </div>
               <div className="space-y-3">
                 {tasks.length === 0 ? (
@@ -124,18 +135,24 @@ const DeveloperDashboard = () => {
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span className="font-mono text-blue-400 text-xs">{task.issueKey}</span>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColor(task.priority)}`}>{task.priority}</span>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 capitalize">
+                            {task.status?.replace(/_/g, ' ')}
+                          </span>
                         </div>
                         <p className="text-white font-medium truncate">{task.title}</p>
                         <p className="text-slate-400 text-xs mt-1">
-                          {task.project?.name} {task.module?.name ? `• ${task.module.name}` : ''}
+                          {task.project?.name}{task.module?.name ? ` • ${task.module.name}` : ''}
                         </p>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 shrink-0 capitalize">
-                        {task.status?.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <div className="mt-2 text-xs text-slate-400">
-                      Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
+                      {/* Show Mark In Progress only for assigned tasks */}
+                      {task.status === 'assigned' && (
+                        <button
+                          onClick={() => handleMarkInProgress(task._id)}
+                          className="px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30 rounded-lg text-xs font-medium transition-all shrink-0"
+                        >
+                          Start
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -146,7 +163,7 @@ const DeveloperDashboard = () => {
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">Recent Bugs</h2>
-                <Link to="/developer/bugs" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">View All</Link>
+                <Link to="/developer/bugs" className="text-sm text-blue-400 hover:text-blue-300">View All</Link>
               </div>
               <div className="space-y-3">
                 {bugs.length === 0 ? (

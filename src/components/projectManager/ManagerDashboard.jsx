@@ -1,40 +1,81 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import ManagerSidebar from './ManagerSidebar'
+import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+
+// Notification type color — same logic as AdminDashboard
+const notifTypeColor = (t) => {
+  if (t?.includes('bug'))       return 'bg-red-500/20 text-red-400'
+  if (t?.includes('completed')) return 'bg-green-500/20 text-green-400'
+  if (t?.includes('assigned'))  return 'bg-blue-500/20 text-blue-400'
+  return 'bg-slate-500/20 text-slate-400'
+}
 
 const ManagerDashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [stats, setStats] = useState(null)
-  const [projects, setProjects] = useState([])
-  const [team, setTeam] = useState([])
-  const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem("user") || "{}")
+  const [sidebarOpen, setSidebarOpen]     = useState(false)
+  const [stats, setStats]                 = useState(null)
+  const [projects, setProjects]           = useState([])
+  const [team, setTeam]                   = useState([])
+  const [notifications, setNotifications] = useState([])
+  const [notifOpen, setNotifOpen]         = useState(false)
+  const [loading, setLoading]             = useState(true)
+  const navigate  = useNavigate()
+  const notifRef  = useRef(null)
+  const user      = JSON.parse(localStorage.getItem('user') || '{}')
+  const token     = localStorage.getItem('token')
+  const headers   = { Authorization: `Bearer ${token}` }
 
-  const handleLogout = () => { localStorage.clear(); navigate("/") }
+  const handleLogout = () => { localStorage.clear(); navigate('/') }
 
+  // Close notification dropdown on outside click
   useEffect(() => {
-    const getDashboardData = async () => {
-      const token = localStorage.getItem("token")
-      const res = await fetch("http://localhost:3000/manager/dashboard", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const data = await res.json()
-      if (data.success) {
-        setStats(data.data.stats)
-        setProjects(data.data.projects)
-        setTeam(data.data.team)
-      }
-      setLoading(false)
+    const handler = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false)
     }
-    getDashboardData()
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [dRes, nRes] = await Promise.all([
+          fetch('http://localhost:3000/manager/dashboard', { headers }),
+          fetch('http://localhost:3000/notifications',     { headers }),
+        ])
+        const [dData, nData] = await Promise.all([dRes.json(), nRes.json()])
+        if (dData.success) {
+          setStats(dData.data.stats)
+          setProjects(dData.data.projects || [])
+          setTeam(dData.data.team || [])
+        }
+        if (nData.data) setNotifications(nData.data)
+      } catch (err) { console.error(err) }
+      finally { setLoading(false) }
+    }
+    fetchAll()
+  }, [])
+
+  const unreadCount = notifications.filter(n => !n.isRead).length
+
+  const markAllRead = async () => {
+    try {
+      await fetch('http://localhost:3000/notifications/read-all', { method: 'PUT', headers })
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+    } catch (err) { console.error(err) }
+  }
+
+  const markRead = async (id) => {
+    try {
+      await fetch(`http://localhost:3000/notifications/${id}/read`, { method: 'PUT', headers })
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n))
+    } catch (err) { console.error(err) }
+  }
+
   const statCards = [
-    { label: 'Active Projects', value: stats?.totalProjects ?? '...', change: '+2',  color: 'from-blue-500 to-cyan-500',     icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
-    { label: 'Total Tasks',     value: stats?.totalTasks    ?? '...', change: '+18', color: 'from-purple-500 to-pink-500',   icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-    { label: 'Team Members',    value: stats?.teamMembers   ?? '...', change: '+3',  color: 'from-green-500 to-emerald-500', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-    { label: 'Pending Bugs',    value: stats?.pendingBugs   ?? '...', change: '-12', color: 'from-orange-500 to-red-500',   icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+    { label: 'Active Projects', value: stats?.totalProjects ?? '...', change: '+2',  pos: true,  color: 'from-blue-500 to-cyan-500',     icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
+    { label: 'Total Tasks',     value: stats?.totalTasks    ?? '...', change: '+18', pos: true,  color: 'from-purple-500 to-pink-500',   icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+    { label: 'Team Members',    value: stats?.teamMembers   ?? '...', change: '+3',  pos: true,  color: 'from-green-500 to-emerald-500', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+    { label: 'Pending Bugs',    value: stats?.pendingBugs   ?? '...', change: '-12', pos: false, color: 'from-orange-500 to-red-500',   icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
   ]
 
   if (loading) return (
@@ -53,7 +94,7 @@ const ManagerDashboard = () => {
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div className="lg:ml-64">
-        {/* Header */}
+        {/* Header with notification bell */}
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
@@ -66,26 +107,81 @@ const ManagerDashboard = () => {
               <p className="text-slate-300 text-sm">Welcome back, {user?.firstName}!</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
-            Logout
-          </button>
+
+          <div className="flex items-center space-x-4">
+            {/* Notification Bell — same as AdminDashboard */}
+            <div className="relative" ref={notifRef}>
+              <button onClick={() => setNotifOpen(!notifOpen)} className="relative p-2 text-slate-300 hover:text-white transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 top-12 w-80 backdrop-blur-xl bg-slate-900/95 border border-white/20 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                    <h3 className="text-white font-semibold text-sm">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllRead} className="text-blue-400 text-xs hover:text-blue-300">Mark all read</button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="text-slate-400 text-sm p-6 text-center">No notifications yet</p>
+                    ) : notifications.slice(0, 10).map((n, i) => (
+                      <div key={i} onClick={() => markRead(n._id)}
+                        className={`px-4 py-3 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${!n.isRead ? 'bg-blue-500/5' : ''}`}>
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${!n.isRead ? 'bg-blue-400' : 'bg-transparent'}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-white text-xs font-medium truncate">{n.title}</p>
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full shrink-0 ${notifTypeColor(n.type)}`}>
+                                {n.type?.replace(/_/g, ' ')}
+                              </span>
+                            </div>
+                            <p className="text-slate-400 text-xs mt-0.5">{n.message}</p>
+                            <p className="text-slate-500 text-xs mt-1">
+                              {new Date(n.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {notifications.length > 0 && (
+                    <p className="text-slate-500 text-xs text-center py-2 border-t border-white/10">{notifications.length} total</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
+              Logout
+            </button>
+          </div>
         </header>
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
           {/* Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {statCards.map((stat, index) => (
-              <div key={index} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-200">
+            {statCards.map((stat, i) => (
+              <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <div className={`w-12 h-12 rounded-xl bg-linear-to-r ${stat.color} flex items-center justify-center text-white`}>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
                     </svg>
                   </div>
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                    stat.change.startsWith('+') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                  }`}>{stat.change}</span>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${stat.pos ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {stat.change}
+                  </span>
                 </div>
                 <h3 className="text-slate-300 text-sm mb-1">{stat.label}</h3>
                 <p className="text-3xl font-bold text-white">{stat.value}</p>
@@ -93,10 +189,9 @@ const ManagerDashboard = () => {
             ))}
           </div>
 
-          {/* Projects + Team */}
+          {/* Projects + Quick Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* Active Projects */}
             <div className="lg:col-span-2 backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">Active Projects</h2>
@@ -105,15 +200,16 @@ const ManagerDashboard = () => {
               <div className="space-y-4">
                 {projects.length === 0 ? (
                   <p className="text-slate-400 text-sm">No projects found.</p>
-                ) : projects.map((project) => (
-                  <div key={project._id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all">
+                ) : projects.slice(0, 4).map(project => (
+                  <div key={project._id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+                    onClick={() => navigate(`/manager/projects/${project._id}`)}>
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h3 className="text-white font-medium">{project.name}</h3>
                         <div className="flex items-center gap-3 mt-1 text-sm text-slate-400">
                           <span>Key: <span className="font-mono text-slate-300">{project.projectKey}</span></span>
                           <span>•</span>
-                          <span>Due: {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'No deadline'}</span>
+                          <span>Team: <span className="text-slate-300">{project.teamMembers?.length || 0}</span></span>
                         </div>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -123,14 +219,14 @@ const ManagerDashboard = () => {
                       }`}>{project.status}</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full bg-linear-to-r from-blue-500 to-cyan-500" style={{ width: project.status === 'completed' ? '100%' : '50%' }} />
+                      <div className="h-full bg-linear-to-r from-blue-500 to-cyan-500"
+                        style={{ width: project.status === 'completed' ? '100%' : '50%' }} />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Quick Actions */}
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
               <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
               <div className="space-y-3">
@@ -153,25 +249,25 @@ const ManagerDashboard = () => {
             </div>
           </div>
 
-          {/* Team Performance */}
+          {/* Team Members */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">Team Members</h2>
-              <Link to="/manager/team" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">View All</Link>
+              <Link to="/manager/team" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">Manage Team</Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {team.length === 0 ? (
                 <p className="text-slate-400 text-sm">No team members found.</p>
-              ) : team.map((member) => (
+              ) : team.slice(0, 6).map(member => (
                 <div key={member._id} className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all">
-                  <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0 bg-linear-to-r ${member.role === 'developer' ? 'from-cyan-500 to-blue-500' : 'from-orange-500 to-red-500'}`}>
                     {member.firstName?.charAt(0)}
                   </div>
                   <div className="min-w-0">
                     <p className="text-white font-medium truncate">{member.firstName} {member.lastName}</p>
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                      member.role === 'developer' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-orange-500/20 text-orange-400'
-                    }`}>{member.role}</span>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${member.role === 'developer' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                      {member.role}
+                    </span>
                   </div>
                 </div>
               ))}

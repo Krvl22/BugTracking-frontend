@@ -1,43 +1,40 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import TesterSidebar from './TesterSidebar'
+import TesterSidebar from '../../components/tester/TesterSidebar'
+import NotificationBell from '../../components/NotificationBell'
 
 const TesterDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [tasks, setTasks] = useState([])
-  const [bugs, setBugs] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [tasks, setTasks]             = useState([])
+  const [bugs, setBugs]               = useState([])
+  const [loading, setLoading]         = useState(true)
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem("user") || "{}")
+  const user     = JSON.parse(localStorage.getItem('user') || '{}')
 
-  const handleLogout = () => { localStorage.clear(); navigate("/") }
+  const handleLogout = () => { localStorage.clear(); navigate('/') }
 
   useEffect(() => {
-    const getDashboardData = async () => {
-      const token = localStorage.getItem("token")
+    const fetch_ = async () => {
+      const token = localStorage.getItem('token')
+      const h     = { Authorization: `Bearer ${token}` }
 
-      const tasksRes = await fetch("http://localhost:3000/tester/tasks", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const tasksData = await tasksRes.json()
-      if (tasksData.success) setTasks(tasksData.data)
-
-      const bugsRes = await fetch(`http://localhost:3000/tester/bugs?userId=${user._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const bugsData = await bugsRes.json()
-      if (bugsData.success) setBugs(bugsData.data)
-
+      const [tRes, bRes] = await Promise.all([
+        fetch('http://localhost:3000/tester/tasks', { headers: h }),
+        fetch(`http://localhost:3000/tester/bugs?userId=${user._id}`, { headers: h }),
+      ])
+      const [tData, bData] = await Promise.all([tRes.json(), bRes.json()])
+      if (tData.success) setTasks(tData.data)
+      if (bData.success) setBugs(bData.data)
       setLoading(false)
     }
-    getDashboardData()
+    fetch_()
   }, [])
 
   const statCards = [
-    { label: 'Tasks To Test',  value: tasks.length,                                    color: 'from-blue-500 to-cyan-500',     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-    { label: 'Bugs Found',     value: bugs.length,                                     color: 'from-red-500 to-orange-500',    icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
-    { label: 'Resolved Bugs',  value: bugs.filter(b => b.resolved).length,             color: 'from-green-500 to-emerald-500', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { label: 'In Testing',     value: tasks.filter(t => t.status === 'in_testing').length, color: 'from-purple-500 to-pink-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+    { label: 'Tasks To Test', value: tasks.length,                                        color: 'from-blue-500 to-cyan-500',     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { label: 'Bugs Found',    value: bugs.length,                                         color: 'from-red-500 to-orange-500',    icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+    { label: 'Resolved Bugs', value: bugs.filter(b => b.resolved).length,                 color: 'from-green-500 to-emerald-500', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { label: 'In Testing',    value: tasks.filter(t => t.status === 'in_testing').length,  color: 'from-purple-500 to-pink-500',   icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
   ]
 
   if (loading) return (
@@ -68,23 +65,24 @@ const TesterDashboard = () => {
               <p className="text-slate-300 text-sm">Welcome back, {user?.firstName}!</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Notification bell */}
+            <NotificationBell />
+            <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
+              Logout
+            </button>
+          </div>
         </header>
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
-          {/* Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {statCards.map((stat, index) => (
-              <div key={index} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl bg-linear-to-r ${stat.color} flex items-center justify-center text-white`}>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
-                    </svg>
-                  </div>
+            {statCards.map((stat, i) => (
+              <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                <div className={`w-12 h-12 rounded-xl bg-linear-to-r ${stat.color} flex items-center justify-center text-white mb-4`}>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
+                  </svg>
                 </div>
                 <h3 className="text-slate-300 text-sm mb-1">{stat.label}</h3>
                 <p className="text-3xl font-bold text-white">{stat.value}</p>
@@ -98,7 +96,7 @@ const TesterDashboard = () => {
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">Tasks to Test</h2>
-                <Link to="/tester/tasks" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">View All</Link>
+                <Link to="/tester/tasks" className="text-sm text-blue-400 hover:text-blue-300">View All</Link>
               </div>
               <div className="space-y-3">
                 {tasks.length === 0 ? (
@@ -112,7 +110,7 @@ const TesterDashboard = () => {
                         <p className="text-slate-400 text-xs mt-1">{task.project?.name} • {task.assignedTo?.firstName} {task.assignedTo?.lastName}</p>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
-                        task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                        task.priority === 'high' || task.priority === 'urgent' ? 'bg-red-500/20 text-red-400' :
                         task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                         'bg-green-500/20 text-green-400'
                       }`}>{task.priority}</span>
@@ -126,7 +124,7 @@ const TesterDashboard = () => {
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">My Reported Bugs</h2>
-                <Link to="/tester/bugs" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">View All</Link>
+                <Link to="/tester/bugs" className="text-sm text-blue-400 hover:text-blue-300">View All</Link>
               </div>
               <div className="space-y-3">
                 {bugs.length === 0 ? (
