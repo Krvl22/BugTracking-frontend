@@ -139,13 +139,13 @@ import DeveloperProjects       from "../pages/developer/DeveloperProjects"
 import DeveloperBugs           from "../pages/developer/DeveloperBugs"
 import DeveloperTasks          from "../pages/developer/DeveloperTasks"
 import DeveloperProjectDetails from "../pages/developer/DeveloperProjectDetails"  // NEW
-import { DeveloperSettings }   from "../pages/developer/DeveloperSettings"        // NEW
+import  DeveloperSettings    from "../pages/developer/DeveloperSettings"        // NEW
 
 import TesterDashboard  from "../components/tester/TesterDashboard"
 import TesterBugs       from "../pages/tester/TesterBugs"
 import TesterReports    from "../pages/tester/TesterReports"
 import TesterTasks      from "../pages/tester/TesterTasks"
-import { TesterSettings } from "../pages/tester/TesterSettings"                   // NEW
+import  TesterSettings  from "../pages/tester/TesterSettings"                   // NEW
 
 const router = createBrowserRouter([
 

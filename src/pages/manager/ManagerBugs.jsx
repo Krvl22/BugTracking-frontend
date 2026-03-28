@@ -2,43 +2,64 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 
-const severityColor = (s) => ({
-  low: 'bg-green-500/20 text-green-400', medium: 'bg-yellow-500/20 text-yellow-400',
-  high: 'bg-orange-500/20 text-orange-400', critical: 'bg-red-500/20 text-red-400',
-}[s] || 'bg-slate-500/20 text-slate-400')
+const severityColor = (s) => ({ low: 'bg-green-500/20 text-green-400', medium: 'bg-yellow-500/20 text-yellow-400', high: 'bg-orange-500/20 text-orange-400', critical: 'bg-red-500/20 text-red-400' }[s] || 'bg-slate-500/20 text-slate-400')
 
 const ManagerBugs = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [data, setData]               = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [filter, setFilter]           = useState('all')
+  const [sidebarOpen, setSidebarOpen]     = useState(false)
+  const [data, setData]                   = useState([])
+  const [allUsers, setAllUsers]           = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [filter, setFilter]               = useState('all')
+  const [reassigningBug, setReassigningBug] = useState(null) // bug._id being reassigned
+  const [reassignUserId, setReassignUserId] = useState('')
+  const [toast, setToast]                 = useState('')
   const navigate = useNavigate()
 
-  const handleLogout = () => { localStorage.clear(); navigate('/') }
+  const token   = localStorage.getItem('token')
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('token')
-      try {
-        const res    = await fetch('http://localhost:3000/manager/bugs', { headers: { Authorization: `Bearer ${token}` } })
-        const result = await res.json()
-        if (result.success) setData(result.data || [])
-      } catch (err) { console.error(err) }
-      finally { setLoading(false) }
-    }
-    fetchData()
-  }, [])
+  const handleLogout = () => { localStorage.clear(); navigate('/') }
+  const showToast    = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
+
+  const fetchData = async () => {
+    try {
+      const [bRes, uRes] = await Promise.all([
+        fetch('http://localhost:3000/manager/bugs', { headers }),
+        fetch('http://localhost:3000/manager/team', { headers }),
+      ])
+      const [bData, uData] = await Promise.all([bRes.json(), uRes.json()])
+      if (bData.success) setData(bData.data || [])
+      if (uData.success) setAllUsers(uData.data || [])
+    } catch (err) { console.error(err) }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { fetchData() }, [])
+
+  // Reassign the bug's task to a different developer
+  const handleReassign = async (taskId, userId) => {
+    try {
+      const res  = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ assignedTo: userId, status: 'fix_in_progress' }),
+      })
+      const data = await res.json()
+      if (data.success) { showToast('Task reassigned to developer!'); setReassigningBug(null); setReassignUserId(''); fetchData() }
+      else showToast(data.message || 'Failed to reassign')
+    } catch { showToast('Server error') }
+  }
+
+  const developers = allUsers.filter(u => u.role === 'developer')
+  const filtered   = filter === 'all' ? data :
+    filter === 'resolved' ? data.filter(b => b.resolved)  :
+    filter === 'open'     ? data.filter(b => !b.resolved) :
+    data.filter(b => b.bugSeverity === filter)
 
   if (loading) return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
       <p className="text-white text-xl">Loading...</p>
     </div>
   )
-
-  const filtered = filter === 'all'      ? data :
-    filter === 'resolved' ? data.filter(b => b.resolved) :
-    filter === 'open'     ? data.filter(b => !b.resolved) :
-    data.filter(b => b.bugSeverity === filter)
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -59,7 +80,7 @@ const ManagerBugs = () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-white">Bug Reports</h1>
-              <p className="text-slate-300 text-sm">Track all reported bugs</p>
+              <p className="text-slate-300 text-sm">Track and reassign bug fixes</p>
             </div>
           </div>
           <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
@@ -68,6 +89,12 @@ const ManagerBugs = () => {
         </header>
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
+
+          {toast && (
+            <div className="fixed top-20 right-6 z-50 px-4 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl text-sm font-medium shadow-xl">
+              {toast}
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -90,7 +117,6 @@ const ManagerBugs = () => {
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               <h2 className="text-xl font-bold text-white">All Bug Reports</h2>
-              {/* FIX: bg-slate-800 ensures dropdown options are visible */}
               <select value={filter} onChange={e => setFilter(e.target.value)}
                 className="px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
                 <option value="all"      className="bg-slate-800 text-white">All</option>
@@ -110,32 +136,51 @@ const ManagerBugs = () => {
                 {filtered.map(bug => (
                   <div key={bug._id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${severityColor(bug.bugSeverity)}`}>
-                        {bug.bugSeverity}
-                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${severityColor(bug.bugSeverity)}`}>{bug.bugSeverity}</span>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${bug.resolved ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                         {bug.resolved ? 'Resolved' : 'Open'}
                       </span>
                     </div>
                     <p className="text-white font-medium mb-2">{bug.comment}</p>
-                    <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                    <div className="flex flex-wrap gap-3 text-xs text-slate-400 mb-3">
                       <span>Task: <span className="text-blue-400 font-mono">{bug.task?.issueKey ?? 'N/A'}</span></span>
                       <span>Title: <span className="text-slate-300">{bug.task?.title ?? 'N/A'}</span></span>
                       <span>Reported by: <span className="text-slate-300">{bug.commentedBy?.firstName} {bug.commentedBy?.lastName}</span></span>
                       {bug.createdAt && <span>Date: <span className="text-slate-300">{new Date(bug.createdAt).toLocaleDateString()}</span></span>}
                     </div>
+
+                    {/* Manager can reassign bug's task to a different developer */}
+                    {!bug.resolved && bug.task?._id && developers.length > 0 && (
+                      <div className="pt-3 border-t border-white/10">
+                        {reassigningBug === bug._id ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-slate-400 text-xs">Assign fix to:</span>
+                            <select value={reassignUserId} onChange={e => setReassignUserId(e.target.value)}
+                              className="px-2 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:border-blue-500 min-w-[140px]">
+                              <option value="" className="bg-slate-800 text-white">— Select developer —</option>
+                              {developers.map(u => (
+                                <option key={u._id} value={u._id} className="bg-slate-800 text-white">{u.firstName} {u.lastName}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => reassignUserId && handleReassign(bug.task._id, reassignUserId)}
+                              className="px-2 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs">✓</button>
+                            <button onClick={() => { setReassigningBug(null); setReassignUserId('') }}
+                              className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg text-xs">✕</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => { setReassigningBug(bug._id); setReassignUserId('') }}
+                            className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg text-xs transition-colors">
+                            Reassign Fix to Developer
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Note: Managers view bugs but resolution is done by testers/developers */}
-          <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-4 border border-white/10">
-            <p className="text-slate-400 text-sm text-center">
-              💡 Bug resolution is handled by Testers. Managers can view all bugs and assign fix tasks to developers.
-            </p>
-          </div>
         </main>
       </div>
     </div>

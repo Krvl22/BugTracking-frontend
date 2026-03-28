@@ -2,29 +2,27 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 
-// Color helpers
 const roleColor = (r) => r === 'developer' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-orange-500/20 text-orange-400'
 const roleGrad  = (r) => r === 'developer' ? 'from-cyan-500 to-blue-500' : 'from-orange-500 to-red-500'
 
 const ManagerTeam = () => {
-  const [sidebarOpen, setSidebarOpen]   = useState(false)
-  const [projects, setProjects]         = useState([])   // all projects with teamMembers populated
-  const [allUsers, setAllUsers]         = useState([])   // all devs+testers in system (for add modal)
-  const [loading, setLoading]           = useState(true)
-  const [detailUser, setDetailUser]     = useState(null) // user detail modal
-  const [addModal, setAddModal]         = useState(null) // project object for add-member modal
-  const [addSearch, setAddSearch]       = useState('')
-  const [search, setSearch]             = useState('')
-  const [roleFilter, setRoleFilter]     = useState('all')
-  const [toast, setToast]               = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [projects, setProjects]       = useState([])
+  const [allUsers, setAllUsers]       = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [detailUser, setDetailUser]   = useState(null)
+  const [addModal, setAddModal]       = useState(null)
+  const [addSearch, setAddSearch]     = useState('')
+  const [search, setSearch]           = useState('')
+  const [roleFilter, setRoleFilter]   = useState('all')
+  const [toast, setToast]             = useState('')
   const navigate = useNavigate()
 
   const token   = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
-
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
+  const showToast    = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
   const fetchData = async () => {
     try {
@@ -33,7 +31,6 @@ const ManagerTeam = () => {
         fetch('http://localhost:3000/manager/team',     { headers }),
       ])
       const [pData, uData] = await Promise.all([pRes.json(), uRes.json()])
-      // Updated ManagerController returns data as array directly
       if (pData.success) setProjects(Array.isArray(pData.data) ? pData.data : pData.data?.projects || [])
       if (uData.success) setAllUsers(uData.data || [])
     } catch (err) { console.error(err) }
@@ -42,24 +39,14 @@ const ManagerTeam = () => {
 
   useEffect(() => { fetchData() }, [])
 
-  // Collect all unique team members already in any project
-  const teamMemberIds = new Set(
-    projects.flatMap(p => (p.teamMembers || []).map(m => (m._id || m).toString()))
-  )
-  const teamMembers = allUsers.filter(u => teamMemberIds.has(u._id))
-
-  // Users NOT yet in a specific project
-  const notInProject = (project) => {
+  const teamMemberIds = new Set(projects.flatMap(p => (p.teamMembers || []).map(m => (m._id || m).toString())))
+  const teamMembers   = allUsers.filter(u => teamMemberIds.has(u._id))
+  const notInProject  = (project) => {
     const inProj = new Set((project.teamMembers || []).map(m => (m._id || m).toString()))
     return allUsers.filter(u => !inProj.has(u._id))
   }
-
-  // Which projects is a user in?
-  const userProjects = (userId) =>
-    projects.filter(p => (p.teamMembers || []).some(m => (m._id || m).toString() === userId))
-
-  // Filtered team list for display grid
-  const displayed = teamMembers.filter(u => {
+  const userProjects = (userId) => projects.filter(p => (p.teamMembers || []).some(m => (m._id || m).toString() === userId))
+  const displayed    = teamMembers.filter(u => {
     const matchSearch = `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(search.toLowerCase())
     const matchRole   = roleFilter === 'all' || u.role === roleFilter
     return matchSearch && matchRole
@@ -72,19 +59,19 @@ const ManagerTeam = () => {
       })
       const data = await res.json()
       if (data.success) { showToast('Member added!'); fetchData() }
-      else showToast(data.message || 'Failed to add')
+      else showToast(data.message || 'Failed')
     } catch { showToast('Server error') }
   }
 
   const removeMember = async (projectId, userId) => {
-    if (!window.confirm('Remove this member from the project?')) return
+    if (!window.confirm('Remove this member?')) return
     try {
       const res  = await fetch(`http://localhost:3000/manager/projects/${projectId}/remove-member`, {
         method: 'PATCH', headers, body: JSON.stringify({ userId })
       })
       const data = await res.json()
       if (data.success) { showToast('Member removed.'); fetchData() }
-      else showToast(data.message || 'Failed to remove')
+      else showToast(data.message || 'Failed')
     } catch { showToast('Server error') }
   }
 
@@ -123,7 +110,6 @@ const ManagerTeam = () => {
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
-          {/* Toast */}
           {toast && (
             <div className="fixed top-20 right-6 z-50 px-4 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl text-sm font-medium shadow-xl">
               {toast}
@@ -133,10 +119,10 @@ const ManagerTeam = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Team Members',   value: teamMembers.length,                                   color: 'from-blue-500 to-cyan-500' },
+              { label: 'Team Members',   value: teamMembers.length,                                    color: 'from-blue-500 to-cyan-500' },
               { label: 'Developers',     value: teamMembers.filter(u => u.role === 'developer').length, color: 'from-cyan-500 to-teal-500' },
               { label: 'Testers',        value: teamMembers.filter(u => u.role === 'tester').length,    color: 'from-orange-500 to-red-500' },
-              { label: 'Available Pool', value: allUsers.length,                                       color: 'from-purple-500 to-pink-500' },
+              { label: 'Available Pool', value: allUsers.length,                                        color: 'from-purple-500 to-pink-500' },
             ].map((s, i) => (
               <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-5 border border-white/20">
                 <p className="text-slate-300 text-sm mb-1">{s.label}</p>
@@ -146,12 +132,10 @@ const ManagerTeam = () => {
             ))}
           </div>
 
-          {/* Projects & their teams — add/remove per project */}
+          {/* Projects & Team per project */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <h2 className="text-xl font-bold text-white mb-5">Projects & Team Members</h2>
-            {projects.length === 0 ? (
-              <p className="text-slate-400 text-sm">No projects found.</p>
-            ) : (
+            {projects.length === 0 ? <p className="text-slate-400 text-sm">No projects found.</p> : (
               <div className="space-y-4">
                 {projects.map(project => (
                   <div key={project._id} className="bg-white/5 rounded-xl p-4 border border-white/10">
@@ -169,7 +153,7 @@ const ManagerTeam = () => {
                       </button>
                     </div>
                     {(!project.teamMembers || project.teamMembers.length === 0) ? (
-                      <p className="text-slate-500 text-xs">No members yet — click Add Member to assign someone.</p>
+                      <p className="text-slate-500 text-xs">No members yet — click Add Member.</p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {project.teamMembers.map(member => {
@@ -180,15 +164,11 @@ const ManagerTeam = () => {
                               <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold bg-linear-to-r ${roleGrad(u.role)}`}>
                                 {u.firstName?.charAt(0)}
                               </div>
-                              <span
-                                className="text-white text-xs cursor-pointer hover:text-cyan-400 transition-colors"
-                                onClick={() => setDetailUser(u)}
-                              >
+                              <span className="text-white text-xs cursor-pointer hover:text-cyan-400 transition-colors" onClick={() => setDetailUser(u)}>
                                 {u.firstName} {u.lastName}
                               </span>
                               <span className={`text-xs px-1.5 py-0.5 rounded-full ${roleColor(u.role)}`}>{u.role}</span>
-                              <button onClick={() => removeMember(project._id, u._id)}
-                                className="text-red-400 hover:text-red-300 ml-1 transition-colors" title="Remove from project">
+                              <button onClick={() => removeMember(project._id, u._id)} className="text-red-400 hover:text-red-300 ml-1 transition-colors">
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
@@ -204,7 +184,7 @@ const ManagerTeam = () => {
             )}
           </div>
 
-          {/* Team Members Grid — only those in projects */}
+          {/* Team Members Grid */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               <h2 className="text-xl font-bold text-white">Team Members</h2>
@@ -216,11 +196,12 @@ const ManagerTeam = () => {
                   <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
                     className="pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 w-40" />
                 </div>
+                {/* FIX: bg-slate-800 so dropdown options are visible */}
                 <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
-                  className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
-                  <option value="all">All Roles</option>
-                  <option value="developer">Developers</option>
-                  <option value="tester">Testers</option>
+                  className="px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
+                  <option value="all"       className="bg-slate-800 text-white">All Roles</option>
+                  <option value="developer" className="bg-slate-800 text-white">Developers</option>
+                  <option value="tester"    className="bg-slate-800 text-white">Testers</option>
                 </select>
               </div>
             </div>
@@ -229,38 +210,30 @@ const ManagerTeam = () => {
               <p className="text-slate-400 text-sm">No team members yet. Add members to your projects above.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayed.map(member => {
-                  const memberProjs = userProjects(member._id)
-                  return (
-                    <div key={member._id} onClick={() => setDetailUser(member)}
-                      className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer group">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 bg-linear-to-r ${roleGrad(member.role)}`}>
-                          {member.firstName?.charAt(0)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-white font-medium truncate group-hover:text-cyan-300 transition-colors">
-                            {member.firstName} {member.lastName}
-                          </p>
-                          <p className="text-slate-400 text-xs truncate">{member.email}</p>
-                        </div>
+                {displayed.map(member => (
+                  <div key={member._id} onClick={() => setDetailUser(member)}
+                    className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 bg-linear-to-r ${roleGrad(member.role)}`}>
+                        {member.firstName?.charAt(0)}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${roleColor(member.role)}`}>{member.role}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${member.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                          {member.status || 'active'}
-                        </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white font-medium truncate group-hover:text-cyan-300 transition-colors">{member.firstName} {member.lastName}</p>
+                        <p className="text-slate-400 text-xs truncate">{member.email}</p>
                       </div>
-                      <p className="text-slate-500 text-xs mt-2">
-                        {memberProjs.length} project{memberProjs.length !== 1 ? 's' : ''}
-                      </p>
                     </div>
-                  )
-                })}
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${roleColor(member.role)}`}>{member.role}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${member.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                        {member.status || 'active'}
+                      </span>
+                    </div>
+                    <p className="text-slate-500 text-xs mt-2">{userProjects(member._id).length} project{userProjects(member._id).length !== 1 ? 's' : ''}</p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-
         </main>
       </div>
 
@@ -303,7 +276,7 @@ const ManagerTeam = () => {
                     <div className="flex items-center gap-2">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${roleColor(u.role)}`}>{u.role}</span>
                       <button onClick={() => { addMember(addModal._id, u._id); setAddModal(null) }}
-                        className="px-3 py-1.5 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-xs font-medium transition-all">
+                        className="px-3 py-1.5 bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-lg text-xs font-medium transition-all">
                         Add
                       </button>
                     </div>
@@ -318,7 +291,7 @@ const ManagerTeam = () => {
         </div>
       )}
 
-      {/* Member Detail Modal — shows only info about this user in your projects */}
+      {/* Member Detail Modal */}
       {detailUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="backdrop-blur-xl bg-slate-900/95 border border-white/20 rounded-2xl p-6 w-full max-w-md">
@@ -344,7 +317,6 @@ const ManagerTeam = () => {
                 </svg>
               </button>
             </div>
-
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-sm p-3 bg-white/5 rounded-xl border border-white/10">
                 <span className="text-slate-400">Joined</span>
@@ -355,7 +327,6 @@ const ManagerTeam = () => {
                 <span className="text-white font-medium">{userProjects(detailUser._id).length}</span>
               </div>
             </div>
-
             <h3 className="text-white font-semibold text-sm mb-3">Assigned to Your Projects</h3>
             {userProjects(detailUser._id).length === 0 ? (
               <p className="text-slate-400 text-xs">Not in any of your projects.</p>
@@ -367,16 +338,12 @@ const ManagerTeam = () => {
                       <p className="text-white text-sm font-medium">{p.name}</p>
                       <p className="text-slate-400 text-xs font-mono">{p.projectKey}</p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                      {p.status}
-                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>{p.status}</span>
                   </div>
                 ))}
               </div>
             )}
-
-            <button onClick={() => setDetailUser(null)}
-              className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all">
+            <button onClick={() => setDetailUser(null)} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all">
               Close
             </button>
           </div>
