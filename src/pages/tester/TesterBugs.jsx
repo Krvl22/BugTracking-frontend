@@ -134,6 +134,7 @@
 // }
 
 // export default TesterBugs
+
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'

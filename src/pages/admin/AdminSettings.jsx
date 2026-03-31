@@ -292,7 +292,7 @@ const AdminSettings = () => {
               ))}
             </div>
             <button onClick={handleChangePassword}
-              className="px-6 py-3 bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-medium transition-all">
+              className="px-6 py-3 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-medium transition-all">
               Update Password
             </button>
           </div>

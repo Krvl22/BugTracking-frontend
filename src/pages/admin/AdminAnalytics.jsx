@@ -491,8 +491,8 @@ const AdminAnalytics = () => {
           fetch('http://localhost:3000/users',          { headers }),
           fetch('http://localhost:3000/admin/projects', { headers }),
           fetch('http://localhost:3000/tasks',          { headers }),
-          fetch('http://localhost:3000/bugs',           { headers }),
-          fetch('http://localhost:3000/audit',          { headers }),
+          fetch('http://localhost:3000/bugcomments',    { headers }),
+          fetch('http://localhost:3000/audit/',          { headers }),
         ])
         const [sD, uD, pD, tD, bD, lD] = await Promise.all([sR.json(), uR.json(), pR.json(), tR.json(), bR.json(), lR.json()])
         if (sD.success) setStats(sD.data)
@@ -776,7 +776,7 @@ const AdminAnalytics = () => {
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <h2 className="text-xl font-bold text-white mb-6">Recent Registrations</h2>
             <div className="space-y-3">
-              {users.slice(0, 5).map((u, i) => (
+              {[...users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5).map((u, i) => (
                 <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">{u.firstName?.charAt(0)}</div>

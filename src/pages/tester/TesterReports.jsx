@@ -151,8 +151,9 @@ const TesterReports = () => {
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
-                    <Pie data={severityData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-                      {severityData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    <Pie data={severityData} cx="50%" cy="50%" outerRadius={70} dataKey="value"
+                      label={({ name, percent }) => percent > 0.08 ? `${name} ${Math.round(percent*100)}%` : ''}
+                      labelLine={true}>
                     </Pie>
                     <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
                     <Legend wrapperStyle={{ color: '#94a3b8', fontSize: '12px' }} />

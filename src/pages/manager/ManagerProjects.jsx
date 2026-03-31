@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+import { formatDate } from '../../utils/DateUtils'
 
 const statusColor = (s) => ({
   active:    'bg-green-500/20 text-green-400',
@@ -9,34 +10,66 @@ const statusColor = (s) => ({
 }[s] || 'bg-slate-500/20 text-slate-400')
 
 const ManagerProjects = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [projects, setProjects]       = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [filter, setFilter]           = useState('all')
-  const [search, setSearch]           = useState('')
+  const [sidebarOpen, setSidebarOpen]   = useState(false)
+  const [projects, setProjects]         = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [filter, setFilter]             = useState('all')
+  const [search, setSearch]             = useState('')
+  const [showCreate, setShowCreate]     = useState(false)
+  const [creating, setCreating]         = useState(false)
+  const [form, setForm]                 = useState({ name: '', description: '', projectKey: '', startDate: '', endDate: '' })
   const navigate = useNavigate()
 
-  const token   = localStorage.getItem('token')
-  const headers = { Authorization: `Bearer ${token}` }
+  const user        = JSON.parse(localStorage.getItem('user') || '{}')
+  const token       = localStorage.getItem('token')
+  const authHeaders = { Authorization: `Bearer ${token}` }
+  const jsonHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res  = await fetch('http://localhost:3000/manager/projects', { headers })
-        const data = await res.json()
-        console.log('Manager projects:', data)
-        if (data.success) {
-          // Controller now returns data.data as plain array
-          const list = Array.isArray(data.data) ? data.data : (data.data?.projects || [])
-          setProjects(list)
-        }
-      } catch (err) { console.error(err) }
-      finally { setLoading(false) }
-    }
-    fetchProjects()
-  }, [])
+  const fetchProjects = async () => {
+    try {
+      const res  = await fetch('http://localhost:3000/manager/projects', { headers: authHeaders })
+      const data = await res.json()
+      if (data.success) {
+        const list = Array.isArray(data.data) ? data.data : (data.data?.projects || [])
+        setProjects(list)
+      }
+    } catch (err) { console.error(err) }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { fetchProjects() }, [])
+
+  const handleStatusChange = async (e, id, status) => {
+    e.stopPropagation()
+    try {
+      await fetch(`http://localhost:3000/projects/${id}/status`, {
+        method: 'PATCH', headers: jsonHeaders, body: JSON.stringify({ status }),
+      })
+      fetchProjects()
+    } catch (err) { console.error(err) }
+  }
+
+  const handleCreate = async () => {
+    if (!form.name || !form.projectKey) return
+    setCreating(true)
+    try {
+      const res  = await fetch('http://localhost:3000/projects', {
+        method: 'POST', headers: jsonHeaders,
+        body: JSON.stringify({ ...form, createdBy: user._id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowCreate(false)
+        setForm({ name: '', description: '', projectKey: '', startDate: '', endDate: '' })
+        fetchProjects()
+      } else {
+        alert(data.message || 'Failed to create project')
+      }
+    } catch (err) { console.error(err) }
+    finally { setCreating(false) }
+  }
 
   const counts = {
     all:       projects.length,
@@ -77,13 +110,24 @@ const ManagerProjects = () => {
               <p className="text-slate-300 text-sm">{filtered.length} {filter === 'all' ? 'total' : filter} projects</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            {/* CREATE PROJECT BUTTON */}
+            <button onClick={() => setShowCreate(true)}
+              className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Project
+            </button>
+            <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
+              Logout
+            </button>
+          </div>
         </header>
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
+          {/* Stat Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: 'Total',     value: counts.all,       color: 'from-blue-500 to-cyan-500' },
@@ -103,13 +147,17 @@ const ManagerProjects = () => {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex flex-wrap gap-2">
               {[
-                { key: 'all',       label: 'All',       active: 'bg-linear-to-r from-blue-500 to-cyan-500 border-transparent text-white' },
-                { key: 'active',    label: 'Active',    active: 'bg-green-500/20 border-green-500/30 text-green-400' },
-                { key: 'inactive',  label: 'Inactive',  active: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400' },
-                { key: 'completed', label: 'Completed', active: 'bg-blue-500/20 border-blue-500/30 text-blue-400' },
+                { key: 'all',       label: 'All' },
+                { key: 'active',    label: 'Active' },
+                { key: 'inactive',  label: 'Inactive' },
+                { key: 'completed', label: 'Completed' },
               ].map(btn => (
                 <button key={btn.key} onClick={() => setFilter(btn.key)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${filter === btn.key ? btn.active : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}`}>
+                  className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                    filter === btn.key
+                      ? 'bg-linear-to-r from-blue-500 to-cyan-500 border-transparent text-white'
+                      : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                  }`}>
                   {btn.label} <span className="opacity-60 text-xs ml-1">({counts[btn.key]})</span>
                 </button>
               ))}
@@ -125,7 +173,11 @@ const ManagerProjects = () => {
 
           {filtered.length === 0 ? (
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-12 border border-white/20 text-center">
-              <p className="text-slate-400 text-lg">No projects found</p>
+              <p className="text-slate-400 text-lg mb-4">No projects found</p>
+              <button onClick={() => setShowCreate(true)}
+                className="px-6 py-2 bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-medium">
+                Create your first project
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -139,19 +191,12 @@ const ManagerProjects = () => {
                   </div>
                   <p className="text-slate-400 text-sm mb-4 line-clamp-2">{project.description || 'No description'}</p>
                   <div className="space-y-2 text-sm mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Key</span>
-                      <span className="text-white font-mono">{project.projectKey}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Team</span>
-                      <span className="text-white">{project.teamMembers?.length || 0} members</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Due</span>
-                      <span className="text-white">{project.endDate ? new Date(project.endDate).toLocaleDateString() : 'No deadline'}</span>
-                    </div>
+                    <div className="flex justify-between"><span className="text-slate-400">Key</span><span className="text-white font-mono">{project.projectKey}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Team</span><span className="text-white">{project.teamMembers?.length || 0} members</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Start</span><span className="text-white">{formatDate(project.startDate)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Due</span><span className="text-white">{formatDate(project.endDate)}</span></div>
                   </div>
+
                   {project.teamMembers?.length > 0 && (
                     <div className="flex -space-x-2 mb-3">
                       {project.teamMembers.slice(0, 5).map((m, i) => (
@@ -166,17 +211,80 @@ const ManagerProjects = () => {
                       )}
                     </div>
                   )}
-                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-linear-to-r from-blue-500 to-cyan-500 rounded-full"
-                      style={{ width: project.status === 'completed' ? '100%' : project.status === 'active' ? '50%' : '20%' }} />
+
+                  <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
+                    {project.status === 'active' && (
+                      <>
+                        <button onClick={e => handleStatusChange(e, project._id, 'completed')}
+                          className="flex-1 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs transition-colors">Complete</button>
+                        <button onClick={e => handleStatusChange(e, project._id, 'inactive')}
+                          className="flex-1 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-xs transition-colors">Inactive</button>
+                      </>
+                    )}
+                    {project.status === 'inactive' && (
+                      <button onClick={e => handleStatusChange(e, project._id, 'active')}
+                        className="flex-1 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs transition-colors">Activate</button>
+                    )}
                   </div>
-                  <p className="text-slate-500 text-xs mt-2 group-hover:text-slate-400 transition-colors">Click to view details →</p>
+                  <p className="text-slate-500 text-xs mt-3 group-hover:text-slate-400 transition-colors">Click to view details →</p>
                 </div>
               ))}
             </div>
           )}
         </main>
       </div>
+
+      {/* CREATE PROJECT MODAL */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="backdrop-blur-xl bg-slate-900/95 border border-white/20 rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Create New Project</h2>
+              <button onClick={() => setShowCreate(false)} className="text-slate-400 hover:text-white">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              {[
+                { label: 'Project Name *',  key: 'name',        placeholder: 'My Awesome Project' },
+                { label: 'Project Key *',   key: 'projectKey',  placeholder: 'MAP' },
+                { label: 'Description',     key: 'description', placeholder: 'What is this project about?' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-slate-300 text-sm mb-1 block">{f.label}</label>
+                  <input value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+                </div>
+              ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 text-sm mb-1 block">Start Date</label>
+                  <input type="date" value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="text-slate-300 text-sm mb-1 block">End Date</label>
+                  <input type="date" value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={handleCreate} disabled={creating || !form.name || !form.projectKey}
+                  className="flex-1 py-3 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl text-sm font-medium disabled:opacity-50 transition-all">
+                  {creating ? 'Creating...' : 'Create Project'}
+                </button>
+                <button onClick={() => setShowCreate(false)}
+                  className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-xl text-sm font-medium transition-all">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

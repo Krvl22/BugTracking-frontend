@@ -25,7 +25,6 @@
 //   const [project, setProject]                 = useState(null)
 //   const [modules, setModules]                 = useState([])
 //   const [tasks, setTasks]                     = useState([])
-//   const [allTeam, setAllTeam]                 = useState([])
 //   const [loading, setLoading]                 = useState(true)
 //   const [activeTab, setActiveTab]             = useState('overview')
 //   const [showCreateTask, setShowCreateTask]   = useState(false)
@@ -50,22 +49,20 @@
 
 //   const fetchAll = async () => {
 //     try {
-//       const [pRes, mRes, tRes, uRes] = await Promise.all([
+//       const [pRes, mRes, tRes] = await Promise.all([
 //         fetch(`http://localhost:3000/projects/${id}`,          { headers: authHeaders }),
 //         fetch(`http://localhost:3000/modules?projectId=${id}`, { headers: authHeaders }),
 //         fetch(`http://localhost:3000/tasks?project=${id}`,     { headers: authHeaders }),
-//         fetch('http://localhost:3000/manager/team',            { headers: authHeaders }),
 //       ])
 //       const safe = async (res) => {
 //         const ct = res.headers.get('content-type') || ''
 //         if (!ct.includes('application/json')) return { success: false }
 //         return res.json()
 //       }
-//       const [pData, mData, tData, uData] = await Promise.all([safe(pRes), safe(mRes), safe(tRes), safe(uRes)])
+//       const [pData, mData, tData] = await Promise.all([safe(pRes), safe(mRes), safe(tRes)])
 //       if (pData.success) setProject(pData.data)
 //       if (mData.success) setModules(mData.data || [])
 //       if (tData.success) setTasks(tData.data || [])
-//       if (uData.success) setAllTeam(uData.data || [])
 //     } catch (err) { console.error(err) }
 //     finally { setLoading(false) }
 //   }
@@ -383,7 +380,7 @@
 //             </div>
 //           )}
 
-//           {/* MODULES — with Add Module button */}
+//           {/* MODULES */}
 //           {activeTab === 'modules' && (
 //             <div>
 //               <div className="flex items-center justify-between mb-4">
@@ -441,9 +438,9 @@
 //               ) : (
 //                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 //                   {teamMembers.map(member => {
-//                     const m           = typeof member === 'object' ? member : { _id: member }
-//                     const userTasks   = tasks.filter(t => (t.assignedTo?._id || t.assignedTo) === m._id)
-//                     const userDone    = userTasks.filter(t => t.status === 'completed').length
+//                     const m         = typeof member === 'object' ? member : { _id: member }
+//                     const userTasks = tasks.filter(t => (t.assignedTo?._id || t.assignedTo) === m._id)
+//                     const userDone  = userTasks.filter(t => t.status === 'completed').length
 //                     return (
 //                       <div key={m._id} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
 //                         <div className="flex items-center gap-4 mb-4">
@@ -617,41 +614,49 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+import { formatDate } from '../../utils/DateUtils'
 
 const taskStatusColor = (s) => ({
-  to_do: 'bg-slate-500/20 text-slate-400', assigned: 'bg-blue-500/20 text-blue-400',
-  in_progress: 'bg-yellow-500/20 text-yellow-400', submitted: 'bg-purple-500/20 text-purple-400',
-  in_testing: 'bg-cyan-500/20 text-cyan-400', bug_found: 'bg-red-500/20 text-red-400',
-  fix_in_progress: 'bg-orange-500/20 text-orange-400', resubmitted: 'bg-indigo-500/20 text-indigo-400',
-  completed: 'bg-green-500/20 text-green-400',
+  to_do:           'bg-slate-500/20 text-slate-400',
+  assigned:        'bg-blue-500/20 text-blue-400',
+  in_progress:     'bg-yellow-500/20 text-yellow-400',
+  submitted:       'bg-purple-500/20 text-purple-400',
+  in_testing:      'bg-cyan-500/20 text-cyan-400',
+  bug_found:       'bg-red-500/20 text-red-400',
+  fix_in_progress: 'bg-orange-500/20 text-orange-400',
+  resubmitted:     'bg-indigo-500/20 text-indigo-400',
+  completed:       'bg-green-500/20 text-green-400',
 }[s] || 'bg-slate-500/20 text-slate-400')
 
 const priorityColor = (p) => ({
-  low: 'bg-green-500/20 text-green-400', medium: 'bg-yellow-500/20 text-yellow-400',
-  high: 'bg-orange-500/20 text-orange-400', urgent: 'bg-red-500/20 text-red-400',
+  low:    'bg-green-500/20 text-green-400',
+  medium: 'bg-yellow-500/20 text-yellow-400',
+  high:   'bg-orange-500/20 text-orange-400',
+  urgent: 'bg-red-500/20 text-red-400',
 }[p] || 'bg-slate-500/20 text-slate-400')
 
 const statusColor = (s) => ({
-  active: 'bg-green-500/20 text-green-400', completed: 'bg-blue-500/20 text-blue-400',
-  inactive: 'bg-yellow-500/20 text-yellow-400',
+  active:    'bg-green-500/20 text-green-400',
+  completed: 'bg-blue-500/20 text-blue-400',
+  inactive:  'bg-yellow-500/20 text-yellow-400',
 }[s] || 'bg-slate-500/20 text-slate-400')
 
 const ManagerProjectDetails = () => {
-  const [sidebarOpen, setSidebarOpen]         = useState(false)
-  const [project, setProject]                 = useState(null)
-  const [modules, setModules]                 = useState([])
-  const [tasks, setTasks]                     = useState([])
-  const [loading, setLoading]                 = useState(true)
-  const [activeTab, setActiveTab]             = useState('overview')
-  const [showCreateTask, setShowCreateTask]   = useState(false)
-  const [showAddModule, setShowAddModule]     = useState(false)
-  const [taskForm, setTaskForm]               = useState({ title: '', description: '', module: '', assignedTo: '', priority: 'medium', dueDate: '' })
-  const [moduleForm, setModuleForm]           = useState({ name: '', description: '' })
-  const [taskMsg, setTaskMsg]                 = useState('')
-  const [moduleMsg, setModuleMsg]             = useState('')
-  const [assigningTask, setAssigningTask]     = useState(null)
-  const [assignUserId, setAssignUserId]       = useState('')
-  const [toast, setToast]                     = useState('')
+  const [sidebarOpen, setSidebarOpen]       = useState(false)
+  const [project, setProject]               = useState(null)
+  const [modules, setModules]               = useState([])
+  const [tasks, setTasks]                   = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [activeTab, setActiveTab]           = useState('overview')
+  const [showCreateTask, setShowCreateTask] = useState(false)
+  const [showAddModule, setShowAddModule]   = useState(false)
+  const [taskForm, setTaskForm]             = useState({ title: '', description: '', module: '', assignedTo: '', priority: 'medium', dueDate: '' })
+  const [moduleForm, setModuleForm]         = useState({ name: '', description: '' })
+  const [taskMsg, setTaskMsg]               = useState('')
+  const [moduleMsg, setModuleMsg]           = useState('')
+  const [assigningTask, setAssigningTask]   = useState(null)
+  const [assignUserId, setAssignUserId]     = useState('')
+  const [toast, setToast]                   = useState('')
 
   const navigate    = useNavigate()
   const { id }      = useParams()
@@ -685,7 +690,6 @@ const ManagerProjectDetails = () => {
 
   useEffect(() => { if (id) fetchAll() }, [id])
 
-  // Create Task
   const handleCreateTask = async () => {
     setTaskMsg('')
     if (!taskForm.title.trim()) { setTaskMsg('Title is required'); return }
@@ -708,34 +712,27 @@ const ManagerProjectDetails = () => {
         setShowCreateTask(false)
         setTaskForm({ title: '', description: '', module: '', assignedTo: '', priority: 'medium', dueDate: '' })
         showToast('Task created!'); fetchAll()
-      } else { setTaskMsg(data.message || data.err || 'Failed to create task') }
+      } else { setTaskMsg(data.message || 'Failed to create task') }
     } catch { setTaskMsg('Server error') }
   }
 
-  // Add Module
   const handleAddModule = async () => {
     setModuleMsg('')
     if (!moduleForm.name.trim()) { setModuleMsg('Module name is required'); return }
     try {
       const res  = await fetch('http://localhost:3000/modules', {
         method: 'POST', headers: jsonHeaders,
-        body: JSON.stringify({
-          name:        moduleForm.name.trim(),
-          description: moduleForm.description.trim(),
-          project:     id,
-          createdBy:   user._id,
-        })
+        body: JSON.stringify({ name: moduleForm.name.trim(), description: moduleForm.description.trim(), project: id, createdBy: user._id })
       })
       const data = await res.json()
       if (data.success) {
         setShowAddModule(false)
         setModuleForm({ name: '', description: '' })
         showToast('Module added!'); fetchAll()
-      } else { setModuleMsg(data.message || data.error || 'Failed to add module') }
+      } else { setModuleMsg(data.message || 'Failed to add module') }
     } catch { setModuleMsg('Server error') }
   }
 
-  // Assign task
   const handleAssignTask = async (taskId, userId) => {
     try {
       await fetch(`http://localhost:3000/tasks/${taskId}`, {
@@ -756,6 +753,7 @@ const ManagerProjectDetails = () => {
       <p className="text-white text-xl">Loading project...</p>
     </div>
   )
+
   if (!project) return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
       <div className="text-center">
@@ -815,14 +813,14 @@ const ManagerProjectDetails = () => {
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
-          {/* Stats */}
+          {/* Stats + Progress */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {[
-                { label: 'Total Tasks',  value: tasks.length,                                         color: 'text-white' },
-                { label: 'Completed',    value: completedTasks,                                        color: 'text-green-400' },
-                { label: 'In Progress',  value: tasks.filter(t => t.status === 'in_progress').length,  color: 'text-yellow-400' },
-                { label: 'Team Members', value: teamMembers.length,                                    color: 'text-cyan-400' },
+                { label: 'Total Tasks',  value: tasks.length,                                        color: 'text-white' },
+                { label: 'Completed',    value: completedTasks,                                       color: 'text-green-400' },
+                { label: 'In Progress',  value: tasks.filter(t => t.status === 'in_progress').length, color: 'text-yellow-400' },
+                { label: 'Team Members', value: teamMembers.length,                                   color: 'text-cyan-400' },
               ].map((s, i) => (
                 <div key={i} className="bg-white/5 rounded-xl p-4 text-center border border-white/10">
                   <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
@@ -853,9 +851,7 @@ const ManagerProjectDetails = () => {
               { key: 'team',     label: 'Team',    count: teamMembers.length },
             ].map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-all ${
-                  activeTab === tab.key ? 'bg-white/10 text-white border border-white/20 border-b-0' : 'text-slate-400 hover:text-white'
-                }`}>
+                className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-all ${activeTab === tab.key ? 'bg-white/10 text-white border border-white/20 border-b-0' : 'text-slate-400 hover:text-white'}`}>
                 {tab.label}
                 {tab.count !== undefined && (
                   <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full">{tab.count}</span>
@@ -891,9 +887,10 @@ const ManagerProjectDetails = () => {
                   {[
                     { label: 'Description', value: project.description || 'No description' },
                     { label: 'Created By',  value: project.createdBy ? `${project.createdBy.firstName} ${project.createdBy.lastName}` : '—' },
-                    { label: 'Start Date',  value: project.startDate ? new Date(project.startDate).toLocaleDateString() : '—' },
-                    { label: 'End Date',    value: project.endDate   ? new Date(project.endDate).toLocaleDateString()   : '—' },
-                    { label: 'Created',     value: new Date(project.createdAt).toLocaleDateString() },
+                    // ✅ formatDate prevents "Invalid Date"
+                    { label: 'Start Date',  value: formatDate(project.startDate) },
+                    { label: 'End Date',    value: formatDate(project.endDate) },
+                    { label: 'Created',     value: formatDate(project.createdAt) },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between p-2 bg-white/5 rounded-lg">
                       <span className="text-slate-400">{label}</span>
@@ -953,24 +950,23 @@ const ManagerProjectDetails = () => {
                               </div>
                             ) : <span className="text-slate-500 text-sm">Unassigned</span>}
                           </td>
-                          <td className="p-4 text-slate-400 text-sm">
-                            {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '—'}
-                          </td>
+                          {/* ✅ formatDate on task due date */}
+                          <td className="p-4 text-slate-400 text-sm">{formatDate(task.dueDate, '—')}</td>
                           <td className="p-4">
                             {assignableTeam.length > 0 && (
                               assigningTask === task._id ? (
                                 <div className="flex items-center gap-2">
                                   <select value={assignUserId} onChange={e => setAssignUserId(e.target.value)}
                                     className="px-2 py-1 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none">
-                                    <option value="" className="bg-slate-800 text-white">— Select —</option>
-                                    <optgroup label="Developers" className="bg-slate-800 text-slate-400">
+                                    <option value="">— Select —</option>
+                                    <optgroup label="Developers">
                                       {assignableTeam.filter(m => m.role === 'developer').map(m => (
-                                        <option key={m._id} value={m._id} className="bg-slate-800 text-white">{m.firstName} {m.lastName}</option>
+                                        <option key={m._id} value={m._id}>{m.firstName} {m.lastName}</option>
                                       ))}
                                     </optgroup>
-                                    <optgroup label="Testers" className="bg-slate-800 text-slate-400">
+                                    <optgroup label="Testers">
                                       {assignableTeam.filter(m => m.role === 'tester').map(m => (
-                                        <option key={m._id} value={m._id} className="bg-slate-800 text-white">{m.firstName} {m.lastName}</option>
+                                        <option key={m._id} value={m._id}>{m.firstName} {m.lastName}</option>
                                       ))}
                                     </optgroup>
                                   </select>
@@ -1008,7 +1004,7 @@ const ManagerProjectDetails = () => {
               </div>
               {modules.length === 0 ? (
                 <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-8 border border-white/20 text-center">
-                  <p className="text-slate-400 mb-4">No modules in this project yet</p>
+                  <p className="text-slate-400 mb-4">No modules yet</p>
                   <button onClick={() => setShowAddModule(true)}
                     className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-medium">
                     Add First Module
@@ -1094,7 +1090,6 @@ const ManagerProjectDetails = () => {
               )}
             </div>
           )}
-
         </main>
       </div>
 
@@ -1128,23 +1123,23 @@ const ManagerProjectDetails = () => {
                 <label className="text-slate-400 text-xs mb-1 block">Module <span className="text-slate-500">(optional)</span></label>
                 <select value={taskForm.module} onChange={e => setTaskForm({ ...taskForm, module: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500">
-                  <option value="" className="bg-slate-800 text-white">— No module —</option>
-                  {modules.map(m => <option key={m._id} value={m._id} className="bg-slate-800 text-white">{m.name}</option>)}
+                  <option value="">— No module —</option>
+                  {modules.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-slate-400 text-xs mb-1 block">Assign To <span className="text-slate-500">(optional)</span></label>
                 <select value={taskForm.assignedTo} onChange={e => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500">
-                  <option value="" className="bg-slate-800 text-white">— Unassigned —</option>
-                  <optgroup label="Developers" className="bg-slate-800 text-slate-400">
+                  <option value="">— Unassigned —</option>
+                  <optgroup label="Developers">
                     {assignableTeam.filter(m => m.role === 'developer').map(m => (
-                      <option key={m._id} value={m._id} className="bg-slate-800 text-white">{m.firstName} {m.lastName}</option>
+                      <option key={m._id} value={m._id}>{m.firstName} {m.lastName}</option>
                     ))}
                   </optgroup>
-                  <optgroup label="Testers" className="bg-slate-800 text-slate-400">
+                  <optgroup label="Testers">
                     {assignableTeam.filter(m => m.role === 'tester').map(m => (
-                      <option key={m._id} value={m._id} className="bg-slate-800 text-white">{m.firstName} {m.lastName}</option>
+                      <option key={m._id} value={m._id}>{m.firstName} {m.lastName}</option>
                     ))}
                   </optgroup>
                 </select>
@@ -1154,10 +1149,10 @@ const ManagerProjectDetails = () => {
                   <label className="text-slate-400 text-xs mb-1 block">Priority</label>
                   <select value={taskForm.priority} onChange={e => setTaskForm({ ...taskForm, priority: e.target.value })}
                     className="w-full px-4 py-3 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500">
-                    <option value="low"    className="bg-slate-800 text-white">Low</option>
-                    <option value="medium" className="bg-slate-800 text-white">Medium</option>
-                    <option value="high"   className="bg-slate-800 text-white">High</option>
-                    <option value="urgent" className="bg-slate-800 text-white">Urgent</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
                   </select>
                 </div>
                 <div>

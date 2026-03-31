@@ -191,8 +191,24 @@ const AdminUsers = () => {
                     <td className="p-4 text-slate-400 text-sm">{new Date(user.createdAt).toLocaleDateString()}</td>
                     <td className="p-4">
                       <div className="flex items-center space-x-2">
-                        {user.status==='active'  && <button onClick={(e)=>handleBlock(e,user._id)} className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-xs transition-colors">Block</button>}
-                        {user.status==='blocked' && <button onClick={(e)=>handleReactivate(e,user._id)} className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs transition-colors">Reactivate</button>}
+                        {user.status === 'active' && (
+                          <button onClick={(e) => handleBlock(e, user._id)}
+                            className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-xs transition-colors">
+                            Block
+                          </button>
+                        )}
+                        {user.status === 'blocked' && (
+                          <button onClick={(e) => handleReactivate(e, user._id)}
+                            className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs transition-colors">
+                            Reactivate
+                          </button>
+                        )}
+                        {user.status === 'inactive' && (
+                          <button onClick={(e) => handleReactivate(e, user._id)}
+                            className="px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-xs transition-colors">
+                            Activate
+                          </button>
+                        )}
                         <button onClick={(e)=>handleDelete(e,user._id)} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg text-xs transition-colors">Delete</button>
                       </div>
                     </td>
