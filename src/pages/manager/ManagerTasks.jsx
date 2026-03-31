@@ -44,7 +44,6 @@ const ManagerTasks = () => {
 
   useEffect(() => { fetchData() }, [])
 
-  // Fetch modules when project selected in create form
   useEffect(() => {
     if (!taskForm.project) { setModules([]); return }
     const fetchModules = async () => {
@@ -57,7 +56,6 @@ const ManagerTasks = () => {
     fetchModules()
   }, [taskForm.project])
 
-  // Team members of selected project for assignment
   const selectedProject    = projects.find(p => p._id === taskForm.project)
   const projectTeamMembers = selectedProject?.teamMembers?.filter(m => typeof m === 'object') || []
 
@@ -78,10 +76,10 @@ const ManagerTasks = () => {
     if (!taskForm.project)      { setTaskMsg('Please select a project'); return }
     try {
       const payload = {
-        title:       taskForm.title.trim(),
+        title: taskForm.title.trim(),
         description: taskForm.description.trim(),
-        project:     taskForm.project,
-        priority:    taskForm.priority,
+        project: taskForm.project,
+        priority: taskForm.priority,
         ...(taskForm.module     && { module:     taskForm.module }),
         ...(taskForm.assignedTo && { assignedTo: taskForm.assignedTo }),
         ...(taskForm.dueDate    && { dueDate:    taskForm.dueDate }),
@@ -93,15 +91,17 @@ const ManagerTasks = () => {
       if (data.success) {
         setShowCreate(false)
         setTaskForm({ title: '', description: '', project: '', module: '', assignedTo: '', priority: 'medium', dueDate: '' })
-        showToast('Task created!')
-        fetchData()
-      } else { setTaskMsg(data.message || data.err || 'Failed to create task') }
+        showToast('Task created!'); fetchData()
+      } else { setTaskMsg(data.message || data.err || 'Failed') }
     } catch { setTaskMsg('Server error') }
   }
 
   const developers = allUsers.filter(u => u.role === 'developer')
   const testers    = allUsers.filter(u => u.role === 'tester')
   const filtered   = filter === 'all' ? tasks : tasks.filter(t => t.status === filter)
+
+  // Count per status for stats
+  const count = (s) => tasks.filter(t => t.status === s).length
 
   if (loading) return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
@@ -150,19 +150,24 @@ const ManagerTasks = () => {
             </div>
           )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* ALL 8 status stats — shows complete picture */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             {[
-              { label: 'Total',       value: tasks.length,                                         color: 'from-blue-500 to-cyan-500' },
-              { label: 'To Do',       value: tasks.filter(t => t.status === 'to_do').length,       color: 'from-slate-500 to-slate-600' },
-              { label: 'In Progress', value: tasks.filter(t => t.status === 'in_progress').length, color: 'from-yellow-500 to-orange-500' },
-              { label: 'Completed',   value: tasks.filter(t => t.status === 'completed').length,   color: 'from-green-500 to-emerald-500' },
+              { label: 'Total',           value: tasks.length,              color: 'from-blue-500 to-cyan-500' },
+              { label: 'To Do',           value: count('to_do'),            color: 'from-slate-500 to-slate-600' },
+              { label: 'Assigned',        value: count('assigned'),         color: 'from-blue-400 to-blue-600' },
+              { label: 'In Progress',     value: count('in_progress'),      color: 'from-yellow-500 to-orange-500' },
+              { label: 'In Testing',      value: count('in_testing'),       color: 'from-cyan-500 to-teal-500' },
+              { label: 'Bug Found',       value: count('bug_found'),        color: 'from-red-500 to-red-700' },
+              { label: 'Fix In Progress', value: count('fix_in_progress'),  color: 'from-orange-500 to-orange-700' },
+              { label: 'Completed',       value: count('completed'),        color: 'from-green-500 to-emerald-500' },
             ].map((s, i) => (
-              <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-5 border border-white/20">
-                <p className="text-slate-300 text-sm mb-1">{s.label}</p>
-                <p className="text-3xl font-bold text-white">{s.value}</p>
-                <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                  <div className={`h-full bg-linear-to-r ${s.color}`} style={{ width: tasks.length ? `${(s.value / tasks.length) * 100}%` : '0%' }} />
+              <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-3 border border-white/20 text-center">
+                <p className="text-2xl font-bold text-white">{s.value}</p>
+                <p className="text-slate-400 text-xs mt-1 leading-tight">{s.label}</p>
+                <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                  <div className={`h-full bg-linear-to-r ${s.color}`}
+                    style={{ width: tasks.length ? `${(s.value / tasks.length) * 100}%` : '0%' }} />
                 </div>
               </div>
             ))}
@@ -206,12 +211,11 @@ const ManagerTasks = () => {
                           {task.dueDate    && <span>Due: <span className="text-slate-300">{new Date(task.dueDate).toLocaleDateString()}</span></span>}
                         </div>
                       </div>
-
                       <div className="shrink-0">
                         {assigningTask === task._id ? (
                           <div className="flex items-center gap-2 flex-wrap">
                             <select value={assignUserId} onChange={e => setAssignUserId(e.target.value)}
-                              className="px-2 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:border-blue-500 min-w-[140px]">
+                              className="px-2 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none min-w-[140px]">
                               <option value="" className="bg-slate-800 text-white">— Select user —</option>
                               {developers.length > 0 && (
                                 <optgroup label="Developers" className="bg-slate-800 text-slate-400">
