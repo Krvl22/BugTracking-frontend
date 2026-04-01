@@ -325,9 +325,11 @@ const ManagerTasks = () => {
                 <select value={taskForm.assignedTo} onChange={e => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500"
                   disabled={!taskForm.project}>
-                  <option value="">— Select Developer —</option>
+                  <option value="" className="bg-slate-800 text-white">
+                    — Select Developer —
+                  </option>
                   {projectTeamMembers.filter(m => m.role === 'developer').map(m => (
-                    <option key={m._id} value={m._id}>{m.firstName} {m.lastName}</option>
+                    <option key={m._id} value={m._id} className="bg-slate-800 text-white">{m.firstName} {m.lastName} </option>
                   ))}
                 </select>
               </div>
@@ -336,9 +338,11 @@ const ManagerTasks = () => {
                 <select value={taskForm.testerId} onChange={e => setTaskForm({ ...taskForm, testerId: e.target.value })}
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500"
                   disabled={!taskForm.project}>
-                  <option value="">— Select Tester —</option>
+                  <option value="" className="bg-slate-800 text-white">
+                    — Select Tester —
+                  </option>
                   {projectTeamMembers.filter(m => m.role === 'tester').map(m => (
-                    <option key={m._id} value={m._id}>{m.firstName} {m.lastName}</option>
+                    <option key={m._id} value={m._id} className="bg-slate-800 text-white">{m.firstName} {m.lastName}</option>
                   ))}
                 </select>
               </div>

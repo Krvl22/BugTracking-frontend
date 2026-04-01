@@ -486,21 +486,34 @@ const AdminAnalytics = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [sR, uR, pR, tR, bR, lR] = await Promise.all([
-          fetch('http://localhost:3000/admin/stats',    { headers }),
-          fetch('http://localhost:3000/users',          { headers }),
-          fetch('http://localhost:3000/admin/projects', { headers }),
-          fetch('http://localhost:3000/tasks',          { headers }),
-          fetch('http://localhost:3000/bugcomments',    { headers }),
-          fetch('http://localhost:3000/audit/',          { headers }),
-        ])
-        const [sD, uD, pD, tD, bD, lD] = await Promise.all([sR.json(), uR.json(), pR.json(), tR.json(), bR.json(), lR.json()])
+        const safeFetch = async (url) => {
+  try {
+    const res = await fetch(url, { headers })
+    const data = await res.json()
+    console.log("SUCCESS:", url, data)
+    return data
+  } catch (err) {
+    console.error("FAILED:", url, err)
+    return { success: false }
+  }
+}
+
+const [sD, uD, pD, tD, bD, lD] = await Promise.all([
+  safeFetch('http://localhost:3000/admin/stats'),
+  safeFetch('http://localhost:3000/users'),
+  safeFetch('http://localhost:3000/admin/projects'),
+  safeFetch('http://localhost:3000/tasks'),
+  safeFetch('http://localhost:3000/bugcomments'),
+  safeFetch('http://localhost:3000/audit')
+])
+//        console.log("AUDIT RESPONSE:", lD)
         if (sD.success) setStats(sD.data)
         if (uD.success) setUsers(uD.data)
         if (pD.success) setProjects(pD.data)
         if (tD.success) setTasks(tD.data)
         if (bD.success) setBugs(bD.data)
         if (lD.success) setAuditLogs(lD.data)
+          console.log("AUDIT LOGS STATE:", lD.data) // 🔥 ADD THIS
       } catch (err) { console.error(err) }
       finally { setLoading(false) }
     }
@@ -517,15 +530,32 @@ const AdminAnalytics = () => {
   const completionRate    = projects.length ? Math.round((completedProjects / projects.length) * 100) : 0
 
   const topActiveUsers = Object.values(
-    auditLogs.reduce((a, log) => {
-      const id = log.performedBy?._id
-      if (!id) return a
-      if (!a[id]) a[id] = { user: log.performedBy, count: 0 }
-      a[id].count++
-      return a
-    }, {})
-  ).sort((a, b) => b.count - a.count).slice(0, 5)
+  auditLogs.reduce((acc, log) => {
+    const user = log.performedBy
 
+    if (!user || !user._id) return acc
+
+    const id = user._id
+
+    if (!acc[id]) {
+      acc[id] = {
+        user: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          profilePic: user.profilePic || null
+        },
+        count: 0
+      }
+    }
+
+    acc[id].count += 1
+
+    return acc
+  }, {})
+)
+.sort((a, b) => b.count - a.count)
+.slice(0, 5)
   // Chart data — same style as ManagerReports
   const bugPieData  = Object.entries(bugSevCounts).map(([k, v]) => ({ name: k, value: v, color: SEVERITY_COLORS[k] || PIE_COLORS[0] }))
   const taskBarData = Object.entries(taskStatusCounts).map(([k, v]) => ({ name: k.replace(/_/g, ' '), value: v }))

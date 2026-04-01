@@ -25,6 +25,8 @@ import ManagerProjectDetails from "../pages/manager/ManagerProjectDetails"
 import ManagerSettings       from "../pages/manager/ManagerSettings"
 import ManagerBugDetails     from "../pages/manager/ManagerBugDetails"
 import ManagerTaskDetails    from "../pages/manager/ManagerTaskDetails"
+import ManagerSprint         from "../pages/manager/ManagerSprints";
+import ManagerAssignTester    from "../pages/manager/ManagerAssignTester";
 
 import DeveloperDashboard      from "../components/developer/DeveloperDashboard"
 import DeveloperProjects       from "../pages/developer/DeveloperProjects"
@@ -76,7 +78,9 @@ const router = createBrowserRouter([
       { path: "/manager/bugs/:id",     element: <ManagerBugDetails /> },
       { path: "/manager/reports",      element: <ManagerReports /> },
       { path: "/manager/tasks",        element: <ManagerTasks /> },
-     { path: "/manager/tasks/:id",    element: <ManagerTaskDetails /> },
+      { path: "/manager/tasks/:id",    element: <ManagerTaskDetails /> },
+      { path: "/manager/sprints", element: <ManagerSprint /> },
+      { path: "/manager/assign-tester", element: <ManagerAssignTester /> },
       { path: "/manager/team",         element: <ManagerTeam /> },
       { path: "/manager/settings",     element: <ManagerSettings /> },
     ]

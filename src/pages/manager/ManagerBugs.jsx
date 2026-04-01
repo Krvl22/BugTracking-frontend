@@ -78,6 +78,30 @@ const ManagerBugs = () => {
     }
   }
 
+  const handleManagerResolve = async (taskId) => {
+  try {
+    const res = await fetch(
+      `http://localhost:3000/manager/resolve-manager/${taskId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      successToast(data.message);
+      fetchData();
+    } else {
+      errorToast(data.message || "Failed");
+    }
+  } catch {
+    errorToast("Server error");
+  }
+};
   const developers = allUsers.filter(u => u.role === 'developer')
   const filtered   = filter === 'all'      ? data :
                      filter === 'resolved' ? data.filter(b => b.resolved) :
@@ -200,7 +224,15 @@ const ManagerBugs = () => {
                           >
                             Mark Resolved
                           </button>
-
+                          {/* 🔥 Manager Resolve (Critical Only) */}
+                          {(bug.bugSeverity === "high" || bug.bugSeverity === "critical") && (
+                            <button
+                              onClick={() => handleManagerResolve(bug.task?._id)}
+                              className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium transition-all"
+                            >
+                              Resolve (Manager)
+                            </button>
+                          )}
                           {/* Reassign Fix */}
                           {bug.task?._id && developers.length > 0 && (
                             reassigningBug === bug._id ? (
