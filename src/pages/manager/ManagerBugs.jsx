@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
-import { successToast, errorToast } from "../../utils/toast"
+import { successToast, errorToast } from '../../utils/toast'
 
-const severityColor = (s) => ({ low: 'bg-green-500/20 text-green-400', medium: 'bg-yellow-500/20 text-yellow-400', high: 'bg-orange-500/20 text-orange-400', critical: 'bg-red-500/20 text-red-400' }[s] || 'bg-slate-500/20 text-slate-400')
+const severityColor = (s) => ({
+  low:      'bg-green-500/20 text-green-400',
+  medium:   'bg-yellow-500/20 text-yellow-400',
+  high:     'bg-orange-500/20 text-orange-400',
+  critical: 'bg-red-500/20 text-red-400',
+}[s] || 'bg-slate-500/20 text-slate-400')
 
 const ManagerBugs = () => {
-  const [sidebarOpen, setSidebarOpen]     = useState(false)
-  const [data, setData]                   = useState([])
-  const [allUsers, setAllUsers]           = useState([])
-  const [loading, setLoading]             = useState(true)
-  const [filter, setFilter]               = useState('all')
-  const [reassigningBug, setReassigningBug] = useState(null) // bug._id being reassigned
+  const [sidebarOpen, setSidebarOpen]       = useState(false)
+  const [data, setData]                     = useState([])
+  const [allUsers, setAllUsers]             = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [filter, setFilter]                 = useState('all')
+  const [reassigningBug, setReassigningBug] = useState(null)
   const [reassignUserId, setReassignUserId] = useState('')
-  const navigate = useNavigate()
 
-  const token   = localStorage.getItem('token')
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+  const navigate = useNavigate()
+  const token    = localStorage.getItem('token')
+  const headers  = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
@@ -35,7 +40,6 @@ const ManagerBugs = () => {
 
   useEffect(() => { fetchData() }, [])
 
-  // Reassign the bug's task to a different developer
   const handleReassign = async (taskId, userId) => {
     try {
       const res  = await fetch(`http://localhost:3000/tasks/${taskId}`, {
@@ -43,16 +47,42 @@ const ManagerBugs = () => {
         body: JSON.stringify({ assignedTo: userId, status: 'fix_in_progress' }),
       })
       const data = await res.json()
-      if (data.success) { successToast('Bug reassigned successfully'); setReassigningBug(null); setReassignUserId(''); fetchData() }
-      else errorToast(data.message || 'Failed to reassign')
-    } catch { errorToast("Server error while reassigning tasks") }
+      if (data.success) {
+        successToast('Bug reassigned successfully')
+        setReassigningBug(null)
+        setReassignUserId('')
+        fetchData()
+      } else {
+        errorToast(data.message || 'Failed to reassign')
+      }
+    } catch {
+      errorToast('Server error while reassigning')
+    }
+  }
+
+  const handleMarkResolved = async (bugId) => {
+    try {
+      const res  = await fetch(`http://localhost:3000/bugcomments/${bugId}/resolve`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success) {
+        successToast('Bug marked as resolved')
+        fetchData()
+      } else {
+        errorToast(data.message || 'Failed to resolve')
+      }
+    } catch {
+      errorToast('Server error')
+    }
   }
 
   const developers = allUsers.filter(u => u.role === 'developer')
-  const filtered   = filter === 'all' ? data :
-    filter === 'resolved' ? data.filter(b => b.resolved)  :
-    filter === 'open'     ? data.filter(b => !b.resolved) :
-    data.filter(b => b.bugSeverity === filter)
+  const filtered   = filter === 'all'      ? data :
+                     filter === 'resolved' ? data.filter(b => b.resolved) :
+                     filter === 'open'     ? data.filter(b => !b.resolved) :
+                     data.filter(b => b.bugSeverity === filter)
 
   if (loading) return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
@@ -79,10 +109,10 @@ const ManagerBugs = () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-white">Bug Reports</h1>
-              <p className="text-slate-300 text-sm">Track and reassign bug fixes</p>
+              <p className="text-slate-300 text-sm">{data.length} total · {data.filter(b => !b.resolved).length} open</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
+          <button onClick={handleLogout} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-all">
             Logout
           </button>
         </header>
@@ -101,7 +131,8 @@ const ManagerBugs = () => {
                 <p className="text-slate-300 text-sm mb-1">{s.label}</p>
                 <p className="text-3xl font-bold text-white">{s.value}</p>
                 <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                  <div className={`h-full bg-linear-to-r ${s.color}`} style={{ width: data.length ? `${(s.value / data.length) * 100}%` : '0%' }} />
+                  <div className={`h-full bg-linear-to-r ${s.color}`}
+                    style={{ width: data.length ? `${(s.value / data.length) * 100}%` : '0%' }} />
                 </div>
               </div>
             ))}
@@ -112,60 +143,98 @@ const ManagerBugs = () => {
               <h2 className="text-xl font-bold text-white">All Bug Reports</h2>
               <select value={filter} onChange={e => setFilter(e.target.value)}
                 className="px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
-                <option value="all"      className="bg-slate-800 text-white">All</option>
-                <option value="open"     className="bg-slate-800 text-white">Open</option>
-                <option value="resolved" className="bg-slate-800 text-white">Resolved</option>
-                <option value="critical" className="bg-slate-800 text-white">Critical</option>
-                <option value="high"     className="bg-slate-800 text-white">High</option>
-                <option value="medium"   className="bg-slate-800 text-white">Medium</option>
-                <option value="low"      className="bg-slate-800 text-white">Low</option>
+                <option value="all">All</option>
+                <option value="open">Open</option>
+                <option value="resolved">Resolved</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
               </select>
             </div>
 
             {filtered.length === 0 ? (
-              <p className="text-slate-400">No bugs found.</p>
+              <div className="text-center py-12">
+                <p className="text-slate-400">No bugs found.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {filtered.map(bug => (
-                  <div key={bug._id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${severityColor(bug.bugSeverity)}`}>{bug.bugSeverity}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${bug.resolved ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {bug.resolved ? 'Resolved' : 'Open'}
-                      </span>
-                    </div>
-                    <p className="text-white font-medium mb-2">{bug.comment}</p>
-                    <div className="flex flex-wrap gap-3 text-xs text-slate-400 mb-3">
-                      <span>Task: <span className="text-blue-400 font-mono">{bug.task?.issueKey ?? 'N/A'}</span></span>
-                      <span>Title: <span className="text-slate-300">{bug.task?.title ?? 'N/A'}</span></span>
-                      <span>Reported by: <span className="text-slate-300">{bug.commentedBy?.firstName} {bug.commentedBy?.lastName}</span></span>
-                      {bug.createdAt && <span>Date: <span className="text-slate-300">{new Date(bug.createdAt).toLocaleDateString()}</span></span>}
+                  <div key={bug._id} className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+
+                    {/* ✅ Clickable top section → navigates to detail page */}
+                    <div
+                      onClick={() => navigate(`/manager/bugs/${bug._id}`)}
+                      className="p-4 hover:bg-white/5 transition-all cursor-pointer group"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${severityColor(bug.bugSeverity)}`}>
+                          {bug.bugSeverity}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${bug.resolved ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                          {bug.resolved ? 'Resolved' : 'Open'}
+                        </span>
+                        {bug.attachmentUrl && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">📎</span>
+                        )}
+                        <span className="ml-auto text-blue-400 text-xs group-hover:text-blue-300 transition-colors">View Details →</span>
+                      </div>
+                      <p className="text-white font-medium mb-2 line-clamp-2">{bug.comment}</p>
+                      <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                        <span>Task: <span className="text-blue-400 font-mono">{bug.task?.issueKey ?? 'N/A'}</span></span>
+                        <span>Title: <span className="text-slate-300">{bug.task?.title ?? 'N/A'}</span></span>
+                        <span>By: <span className="text-slate-300">{bug.commentedBy?.firstName} {bug.commentedBy?.lastName}</span></span>
+                        {bug.createdAt && <span>{new Date(bug.createdAt).toLocaleDateString()}</span>}
+                      </div>
                     </div>
 
-                    {/* Manager can reassign bug's task to a different developer */}
-                    {!bug.resolved && bug.task?._id && developers.length > 0 && (
-                      <div className="pt-3 border-t border-white/10">
-                        {reassigningBug === bug._id ? (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-slate-400 text-xs">Assign fix to:</span>
-                            <select value={reassignUserId} onChange={e => setReassignUserId(e.target.value)}
-                              className="px-2 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:border-blue-500 min-w-[140px]">
-                              <option value="" className="bg-slate-800 text-white">— Select developer —</option>
-                              {developers.map(u => (
-                                <option key={u._id} value={u._id} className="bg-slate-800 text-white">{u.firstName} {u.lastName}</option>
-                              ))}
-                            </select>
-                            <button onClick={() => reassignUserId && handleReassign(bug.task._id, reassignUserId)}
-                              className="px-2 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs">✓</button>
-                            <button onClick={() => { setReassigningBug(null); setReassignUserId('') }}
-                              className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg text-xs">✕</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => { setReassigningBug(bug._id); setReassignUserId('') }}
-                            className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg text-xs transition-colors">
-                            Reassign Fix to Developer
+                    {/* ✅ Action buttons — stop propagation so clicks don't go to detail page */}
+                    {!bug.resolved && (
+                      <div className="px-4 pb-4 pt-0 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-wrap gap-2 pt-3">
+
+                          {/* Mark Resolved */}
+                          <button
+                            onClick={() => handleMarkResolved(bug._id)}
+                            className="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg text-xs font-medium transition-all"
+                          >
+                            Mark Resolved
                           </button>
-                        )}
+
+                          {/* Reassign Fix */}
+                          {bug.task?._id && developers.length > 0 && (
+                            reassigningBug === bug._id ? (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-slate-400 text-xs">Assign fix to:</span>
+                                <select
+                                  value={reassignUserId}
+                                  onChange={e => setReassignUserId(e.target.value)}
+                                  className="px-2 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:border-blue-500 min-w-[140px]"
+                                >
+                                  <option value="">— Select developer —</option>
+                                  {developers.map(u => (
+                                    <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => reassignUserId && handleReassign(bug.task._id, reassignUserId)}
+                                  className="px-2 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs"
+                                >✓</button>
+                                <button
+                                  onClick={() => { setReassigningBug(null); setReassignUserId('') }}
+                                  className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg text-xs"
+                                >✕</button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => { setReassigningBug(bug._id); setReassignUserId('') }}
+                                className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg text-xs font-medium transition-all"
+                              >
+                                Reassign Fix
+                              </button>
+                            )
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -173,7 +242,6 @@ const ManagerBugs = () => {
               </div>
             )}
           </div>
-
         </main>
       </div>
     </div>

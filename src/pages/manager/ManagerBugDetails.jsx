@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+import { successToast, errorToast } from '../../utils/toast'
 
 const severityColor = (s) => ({
   critical: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -10,62 +11,90 @@ const severityColor = (s) => ({
 }[s] || 'bg-slate-500/20 text-slate-400 border-slate-500/30')
 
 const ManagerBugDetails = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [bug, setBug]                 = useState(null)
-  const [loading, setLoading]         = useState(true)
-  const [error, setError]             = useState('')
-  const [resolving, setResolving]     = useState(false)
-  const [resolveMsg, setResolveMsg]   = useState('')
+  const [sidebarOpen, setSidebarOpen]       = useState(false)
+  const [bug, setBug]                       = useState(null)
+  const [loading, setLoading]               = useState(true)
+  const [error, setError]                   = useState('')
+  const [resolving, setResolving]           = useState(false)
+  const [developers, setDevelopers]         = useState([])
+  const [reassigning, setReassigning]       = useState(false)
+  const [reassignUserId, setReassignUserId] = useState('')
+
   const navigate = useNavigate()
   const { id }   = useParams()
   const token    = localStorage.getItem('token')
+  const headers  = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
   useEffect(() => {
-    const fetchBug = async () => {
+    const fetchAll = async () => {
       try {
-        const res    = await fetch(`http://localhost:3000/bugcomments`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        const result = await res.json()
-        if (result.success) {
-          const found = result.data.find(b => b._id === id)
-          if (found) setBug(found)
-          else setError('Bug not found')
+        // ✅ FIXED: fetch by ID directly — no more fetching all and filtering
+        const [bugRes, teamRes] = await Promise.all([
+          fetch(`http://localhost:3000/bugcomments/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('http://localhost:3000/manager/team',      { headers: { Authorization: `Bearer ${token}` } }),
+        ])
+        const [bugData, teamData] = await Promise.all([bugRes.json(), teamRes.json()])
+
+        if (bugData.success) {
+          setBug(bugData.data)
         } else {
-          setError('Failed to load bug')
+          setError(bugData.message || 'Bug not found')
+        }
+
+        if (teamData.success) {
+          setDevelopers((teamData.data || []).filter(u => u.role === 'developer'))
         }
       } catch (err) {
-        setError('Server error')
+        setError('Server error — could not load bug')
         console.error(err)
       } finally {
         setLoading(false)
       }
     }
-    fetchBug()
+    fetchAll()
   }, [id])
 
   const handleResolve = async () => {
     setResolving(true)
-    setResolveMsg('')
     try {
       const res    = await fetch(`http://localhost:3000/bugcomments/${id}/resolve`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
+        method: 'PATCH', headers: { Authorization: `Bearer ${token}` }
       })
       const result = await res.json()
       if (result.success) {
         setBug(result.data)
-        setResolveMsg('Bug marked as resolved!')
+        successToast('Bug marked as resolved!')
       } else {
-        setResolveMsg(result.message || 'Failed to resolve')
+        errorToast(result.message || 'Failed to resolve')
       }
-    } catch (err) {
-      setResolveMsg('Server error')
-      console.error(err)
+    } catch {
+      errorToast('Server error')
     } finally {
       setResolving(false)
+    }
+  }
+
+  const handleReassign = async () => {
+    if (!reassignUserId || !bug?.task?._id) return
+    setReassigning(true)
+    try {
+      const res  = await fetch(`http://localhost:3000/tasks/${bug.task._id}`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ assignedTo: reassignUserId, status: 'fix_in_progress' }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        successToast('Task reassigned to developer')
+        setReassignUserId('')
+      } else {
+        errorToast(data.message || 'Failed to reassign')
+      }
+    } catch {
+      errorToast('Server error')
+    } finally {
+      setReassigning(false)
     }
   }
 
@@ -92,11 +121,11 @@ const ManagerBugDetails = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
+            <button onClick={() => navigate('/manager/bugs')} className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="text-sm">Back</span>
+              <span className="text-sm">Back to Bugs</span>
             </button>
             <div>
               <h1 className="text-2xl font-bold text-white">Bug Details</h1>
@@ -110,7 +139,7 @@ const ManagerBugDetails = () => {
                 disabled={resolving}
                 className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
               >
-                {resolving ? 'Resolving...' : 'Mark Resolved'}
+                {resolving ? 'Resolving...' : '✓ Mark Resolved'}
               </button>
             )}
             <button onClick={handleLogout} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-all">
@@ -119,7 +148,7 @@ const ManagerBugDetails = () => {
           </div>
         </header>
 
-        <main className="p-4 lg:p-8 relative z-10 space-y-6 max-w-3xl">
+        <main className="p-4 lg:p-8 relative z-10 max-w-3xl space-y-6">
 
           {error && (
             <div className="px-4 py-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-sm">
@@ -127,47 +156,42 @@ const ManagerBugDetails = () => {
             </div>
           )}
 
-          {resolveMsg && (
-            <div className="px-4 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl text-sm">
-              {resolveMsg}
-            </div>
-          )}
-
           {bug && (
             <>
-              {/* Status & Severity */}
+              {/* Status badges */}
               <div className="flex flex-wrap gap-3">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium border ${severityColor(bug.bugSeverity)}`}>
-                  {bug.bugSeverity?.toUpperCase()} Severity
+                  {bug.bugSeverity?.charAt(0).toUpperCase() + bug.bugSeverity?.slice(1)} Severity
                 </span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium border ${bug.resolved ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
                   {bug.resolved ? '✓ Resolved' : '● Open'}
                 </span>
               </div>
 
-              {/* Bug Description */}
+              {/* Bug description */}
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
                 <h2 className="text-lg font-bold text-white mb-4">Bug Description</h2>
                 <p className="text-slate-200 leading-relaxed whitespace-pre-wrap">{bug.comment}</p>
               </div>
 
-              {/* Linked Task */}
+              {/* Linked task */}
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
                 <h3 className="text-lg font-bold text-white mb-4">Linked Task</h3>
                 <div className="space-y-3 text-sm">
                   {[
-                    { label: 'Issue Key',   value: bug.task?.issueKey ?? 'N/A', mono: true },
-                    { label: 'Task Title',  value: bug.task?.title    ?? 'N/A' },
+                    { label: 'Issue Key',  value: bug.task?.issueKey ?? 'N/A', mono: true },
+                    { label: 'Task Title', value: bug.task?.title    ?? 'N/A' },
+                    { label: 'Reported',   value: bug.createdAt ? new Date(bug.createdAt).toLocaleString([], { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—' },
                   ].map(({ label, value, mono }) => (
                     <div key={label} className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/10">
                       <span className="text-slate-400">{label}</span>
-                      <span className={`text-white font-medium ${mono ? 'font-mono text-blue-400' : ''}`}>{value}</span>
+                      <span className={`font-medium ${mono ? 'font-mono text-blue-400' : 'text-white'}`}>{value}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Reporter */}
+              {/* Reported by */}
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
                 <h3 className="text-lg font-bold text-white mb-4">Reported By</h3>
                 <div className="flex items-center gap-4 p-3 bg-white/5 rounded-xl border border-white/10">
@@ -176,16 +200,44 @@ const ManagerBugDetails = () => {
                   </div>
                   <div>
                     <p className="text-white font-medium">{bug.commentedBy?.firstName} {bug.commentedBy?.lastName}</p>
-                    <p className="text-slate-400 text-xs">Tester</p>
+                    <p className="text-slate-400 text-xs capitalize">{bug.commentedBy?.role || 'Tester'}</p>
                   </div>
-                  <div className="ml-auto text-right text-xs text-slate-400">
-                    <p>Reported</p>
-                    <p className="text-slate-300">{bug.createdAt ? new Date(bug.createdAt).toLocaleDateString() : '—'}</p>
-                  </div>
+                  <p className="ml-auto text-slate-400 text-xs">
+                    {bug.createdAt ? new Date(bug.createdAt).toLocaleDateString() : '—'}
+                  </p>
                 </div>
               </div>
 
-              {/* Resolution Info */}
+              {/* ✅ Manager actions — Reassign Fix to Developer */}
+              {!bug.resolved && bug.task?._id && developers.length > 0 && (
+                <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                  <h3 className="text-lg font-bold text-white mb-4">Manager Actions</h3>
+                  <div>
+                    <label className="text-slate-400 text-sm mb-2 block">Reassign fix to a developer</label>
+                    <div className="flex gap-3 flex-wrap">
+                      <select
+                        value={reassignUserId}
+                        onChange={e => setReassignUserId(e.target.value)}
+                        className="flex-1 min-w-[200px] px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="">— Select developer —</option>
+                        {developers.map(u => (
+                          <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={handleReassign}
+                        disabled={!reassignUserId || reassigning}
+                        className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                      >
+                        {reassigning ? 'Reassigning...' : 'Reassign Fix'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Resolution info */}
               {bug.resolved && bug.resolvedAt && (
                 <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
                   <h3 className="text-lg font-bold text-white mb-3">Resolution</h3>
@@ -200,20 +252,12 @@ const ManagerBugDetails = () => {
               {bug.attachmentUrl && (
                 <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
                   <h3 className="text-lg font-bold text-white mb-4">Attachment</h3>
-
                   {/\.(png|jpg|jpeg|gif|webp)$/i.test(bug.attachmentUrl) ? (
                     <div>
-                      <img
-                        src={bug.attachmentUrl}
-                        alt="Bug attachment"
-                        className="rounded-xl max-w-full max-h-96 object-contain border border-white/10"
-                      />
-                      <a
-                        href={bug.attachmentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-medium transition-all"
-                      >
+                      <img src={bug.attachmentUrl} alt="Bug attachment"
+                        className="rounded-xl max-w-full max-h-96 object-contain border border-white/10 mb-3" />
+                      <a href={bug.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-medium transition-all">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
@@ -221,19 +265,12 @@ const ManagerBugDetails = () => {
                       </a>
                     </div>
                   ) : (
-                    <a
-                      href={bug.attachmentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white transition-all"
-                    >
+                    <a href={bug.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white transition-all">
                       <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                       </svg>
                       Open Attachment
-                      <svg className="w-4 h-4 text-slate-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
                     </a>
                   )}
                 </div>

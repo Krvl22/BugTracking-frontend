@@ -24,6 +24,7 @@ import ManagerTeam           from "../pages/manager/ManagerTeams"
 import ManagerProjectDetails from "../pages/manager/ManagerProjectDetails"
 import ManagerSettings       from "../pages/manager/ManagerSettings"
 import ManagerBugDetails     from "../pages/manager/ManagerBugDetails"
+import ManagerTaskDetails    from "../pages/manager/ManagerTaskDetails"
 
 import DeveloperDashboard      from "../components/developer/DeveloperDashboard"
 import DeveloperProjects       from "../pages/developer/DeveloperProjects"
@@ -32,6 +33,7 @@ import DeveloperTasks          from "../pages/developer/DeveloperTasks"
 import DeveloperProjectDetails from "../pages/developer/DeveloperProjectDetails"
 import DeveloperSettings       from "../pages/developer/DeveloperSettings"
 import DeveloperBugDetails     from "../pages/developer/DeveloperBugDetails"
+import DeveloperTaskDetails    from "../pages/developer/DeveloperTaskDetails"
 
 import TesterDashboard  from "../components/tester/TesterDashboard"
 import TesterBugs       from "../pages/tester/TesterBugs"
@@ -39,6 +41,7 @@ import TesterReports    from "../pages/tester/TesterReports"
 import TesterTasks      from "../pages/tester/TesterTasks"
 import TesterSettings   from "../pages/tester/TesterSettings"
 import TesterBugDetails from "../pages/tester/TesterBugDetails"  // NEW
+import TesterTaskDetails from "../pages/tester/TesterTaskdetails"
 
 const router = createBrowserRouter([
 
@@ -73,6 +76,7 @@ const router = createBrowserRouter([
       { path: "/manager/bugs/:id",     element: <ManagerBugDetails /> },
       { path: "/manager/reports",      element: <ManagerReports /> },
       { path: "/manager/tasks",        element: <ManagerTasks /> },
+     { path: "/manager/tasks/:id",    element: <ManagerTaskDetails /> },
       { path: "/manager/team",         element: <ManagerTeam /> },
       { path: "/manager/settings",     element: <ManagerSettings /> },
     ]
@@ -86,6 +90,7 @@ const router = createBrowserRouter([
       { path: "/developer/projects",     element: <DeveloperProjects /> },
       { path: "/developer/projects/:id", element: <DeveloperProjectDetails /> },
       { path: "/developer/tasks",        element: <DeveloperTasks /> },
+      { path: "/developer/tasks/:id",    element: <DeveloperTaskDetails /> },
       { path: "/developer/bugs",         element: <DeveloperBugs /> },
       { path: "/developer/bugs/:id",     element: <DeveloperBugDetails /> },
       { path: "/developer/settings",     element: <DeveloperSettings /> },
@@ -98,6 +103,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/testerdashboard",  element: <TesterDashboard /> },
       { path: "/tester/tasks",     element: <TesterTasks /> },
+      { path: "/tester/tasks/:id",   element: <TesterTaskDetails /> },
       { path: "/tester/bugs",      element: <TesterBugs /> },
       { path: "/tester/bugs/:id",  element: <TesterBugDetails /> },   // NEW
       { path: "/tester/reports",   element: <TesterReports /> },
@@ -112,3 +118,8 @@ const router = createBrowserRouter([
 const AppRouter = () => <RouterProvider router={router} />
 
 export default AppRouter
+
+
+
+
+
