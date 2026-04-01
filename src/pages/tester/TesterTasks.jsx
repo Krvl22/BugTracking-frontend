@@ -217,6 +217,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'
 import NotificationBell from '../../components/NotificationBell'
+import { errorToast, successToast } from '../../utils/toast'
 
 const TesterTasks = () => {
   const [sidebarOpen, setSidebarOpen]     = useState(false)
@@ -238,19 +239,45 @@ const TesterTasks = () => {
   const fileRef           = useRef(null)
   const standaloneFileRef = useRef(null)
   const navigate          = useNavigate()
-  const user              = JSON.parse(localStorage.getItem('user') || '{}')
+  //const user              = JSON.parse(localStorage.getItem('user') || '{}')
   const token             = localStorage.getItem('token')
   const h                 = { Authorization: `Bearer ${token}` }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
+  // const handleApprove = async (taskId) => {
+  //   setApproving(taskId)
+  //   const res    = await fetch(`http://localhost:3000/tester/tasks/${taskId}/approve`, { method: 'PATCH', headers: h })
+  //   const result = await res.json()
+  //   if (result.success) setData(prev => prev.filter(t => t._id !== taskId))
+  //   setApproving(null)
+  //   successToast("Task approved successfully!")
+  // }
   const handleApprove = async (taskId) => {
-    setApproving(taskId)
-    const res    = await fetch(`http://localhost:3000/tester/tasks/${taskId}/approve`, { method: 'PATCH', headers: h })
+  setApproving(taskId)
+
+  try {
+    const res = await fetch(`http://localhost:3000/tester/tasks/${taskId}/approve`, {
+      method: 'PATCH',
+      headers: h
+    })
+
     const result = await res.json()
-    if (result.success) setData(prev => prev.filter(t => t._id !== taskId))
-    setApproving(null)
+
+    if (result.success) {
+      setData(prev => prev.filter(t => t._id !== taskId))
+      successToast("Task approved successfully!")
+    } else {
+      errorToast(result.message || "Failed to approve task")
+    }
+
+  } catch (err) {
+    console.error(err)
+    errorToast("Server error while approving task")
   }
+
+  setApproving(null)
+}
 
   const handleReportBug = async (taskId) => {
     if (!bugForm.comment.trim() || bugForm.comment.trim().length < 10) return
@@ -268,8 +295,11 @@ const TesterTasks = () => {
         setReportingTask(null)
         setBugForm({ comment: '', bugSeverity: 'medium' })
         setBugFile(null)
+        successToast('Bug has been reported successfully!')
       }
-    } catch (err) { console.error(err) }
+    } catch (err) { console.error(err)
+      errorToast('Failed to report bug')
+     }
     finally { setSubmittingBug(false) }
   }
 
@@ -289,8 +319,11 @@ const TesterTasks = () => {
         setShowStandaloneBug(false)
         setStandaloneBugForm({ comment: '', bugSeverity: 'medium', taskId: '' })
         setStandaloneBugFile(null)
+        successToast('Bug has been reported successfully!')
       }
-    } catch (err) { console.error(err) }
+    } catch (err) { console.error(err) 
+      errorToast('Failed to report bug')
+    }
     finally { setSubmittingStandalone(false) }
   }
 

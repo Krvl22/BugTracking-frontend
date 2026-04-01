@@ -481,6 +481,7 @@ const TesterDashboard = () => {
       if (result.success) {
         setTasks(prev => prev.filter(t => t._id !== taskId))
         setSelectedTask(null)
+         window.dispatchEvent(new Event("notificationUpdated"))
       }
     } catch (err) { console.error(err) }
     finally { setApproving(null) }
@@ -503,6 +504,8 @@ const TesterDashboard = () => {
         setReportingTask(null)
         setBugForm({ comment: '', bugSeverity: 'medium' })
         refreshBugs()
+
+        window.dispatchEvent(new Event("notificationUpdated"))
       }
     } catch (err) { console.error(err) }
     finally { setSubmittingBug(false) }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { successToast, errorToast } from "../../utils/toast"
 
 const AdminUsers = () => {
   const [sidebarOpen, setSidebarOpen]   = useState(false);
@@ -42,25 +43,40 @@ const AdminUsers = () => {
     try {
       const res  = await fetch('http://localhost:3000/users/register', { method:'POST', headers, body:JSON.stringify(form) });
       const data = await res.json();
-      if (data.success) { setShowAddModal(false); setForm({firstName:'',lastName:'',email:'',password:'',role:'developer'}); fetchUsers(); }
+      if (data.success) { 
+        successToast("User created successfully"); 
+        setShowAddModal(false); setForm({firstName:'',lastName:'',email:'',password:'',role:'developer'}); fetchUsers(); 
+       window.dispatchEvent(new Event("notificationUpdated"))}
       else setFormError(data.message || 'Failed to add user');
-    } catch(err) { setFormError('Server error'); 
+        errorToast(data.message || "Failed to add user");
+    } catch(err) { 
+      setFormError('Server error'); 
+      errorToast("Server error while creating user");
       console.log(err)
     }
   };
 
   const handleBlock = async (e, id) => {
     e.stopPropagation();
-    try { await fetch(`http://localhost:3000/users/${id}/block`, { method:'PATCH', headers }); fetchUsers(); } catch(err) { console.error(err); }
+    try { await fetch(`http://localhost:3000/users/${id}/block`, { method:'PATCH', headers });
+    successToast("User blocked successfully");
+    fetchUsers(); 
+  } catch(err) { errorToast("Failed to block user"); console.error(err); }
   };
   const handleReactivate = async (e, id) => {
     e.stopPropagation();
-    try { await fetch(`http://localhost:3000/users/${id}/reactivate`, { method:'PATCH', headers }); fetchUsers(); } catch(err) { console.error(err); }
+    try { await fetch(`http://localhost:3000/users/${id}/reactivate`, { method:'PATCH', headers });
+    successToast("User reactivated successfully") 
+    fetchUsers(); } 
+    catch(err) { errorToast("Failed to block user"); console.error(err); }
   };
   const handleDelete = async (e, id) => {
     e.stopPropagation();
     if (!window.confirm('Delete this user?')) return;
-    try { await fetch(`http://localhost:3000/users/${id}`, { method:'DELETE', headers }); fetchUsers(); } catch(err) { console.error(err); }
+    try { await fetch(`http://localhost:3000/users/${id}`, { method:'DELETE', headers });
+     successToast("User deleted successfully");
+    fetchUsers(); } 
+    catch(err) { console.error(err); }
   };
 
   const statusColor = (s) => ({ active:'bg-green-500/20 text-green-400', blocked:'bg-red-500/20 text-red-400', deleted:'bg-gray-500/20 text-gray-400' }[s] || 'bg-yellow-500/20 text-yellow-400');

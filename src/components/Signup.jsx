@@ -262,7 +262,7 @@
 
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { toast } from "react-toastify";
+import { successToast, errorToast } from "../utils/toast";
 import { useForm } from "react-hook-form";
 import API from "../api/axios";
 
@@ -342,7 +342,7 @@ const Signup = () => {
   const submitHandler = async (data) => {
     setSubmitted(true);
 
-    if (strength === "weak") return toast.warning("Password is too weak");
+    if (strength === "weak") return errorToast("Password is too weak");
     if (!data.terms)         return; // ✅ Error shown inline below checkbox, not via toast
 
     setLoading(true);
@@ -358,13 +358,13 @@ const Signup = () => {
       });
 
       if (res.status === 200 || res.status === 201) {
-        toast.success("Account created successfully!");
+        successToast("Account created successfully!");
         setTimeout(() => navigate("/"), 1500);
       }
     } catch (err) {
       const status = err.response?.status;
-      if (status === 409) toast.error("An account with this email already exists");
-      else                toast.error(err.response?.data?.message || "Signup failed. Please try again.");
+      if (status === 409) errorToast("An account with this email already exists");
+      else                errorToast(err.response?.data?.message || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -453,6 +453,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DeveloperSidebar from '../../components/developer/DeveloperSidebar'
+import { successToast,errorToast } from '../../utils/toast'
 
 const priorityColor = (p) => ({
   high: 'bg-red-500/20 text-red-400', medium: 'bg-yellow-500/20 text-yellow-400',
@@ -516,22 +517,28 @@ const DeveloperTasks = () => {
           headers: { Authorization: `Bearer ${token}` },
           body: fd,
         })
+        successToast("File attached successfully!")
       } else {
         res = await fetch(`http://localhost:3000/developer/tasks/${submitTaskId}/submit`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` },
         })
+        errorToast("Failed to attache file!")
       }
       const result = await res.json()
       if (result.success) {
         setData(prev => prev.map(t => t._id === submitTaskId ? { ...t, status: 'submitted' } : t))
         setSubmitTaskId(null)
         setSubmitFile(null)
+        successToast('Task submitted successfully!')
       } else {
         setSubmitMsg(result.message || 'Failed to submit')
+        errorToast('Failed to submit task')
       }
     } catch (err) {
+      console.log(err)
       setSubmitMsg('Server error')
+      errorToast('Server error while submitting task')
     } finally {
       setSubmitting(null)
     }
@@ -547,7 +554,10 @@ const DeveloperTasks = () => {
       })
       const data = await res.json()
       if (data.success) setData(prev => prev.map(t => t._id === taskId ? { ...t, status: 'in_progress' } : t))
-    } catch (err) { console.error(err) }
+        successToast("Task marked as in progress")
+    } catch (err) { console.error(err) 
+      errorToast("Failed to update task status")
+    }
   }
 
   if (loading) return (
@@ -556,7 +566,23 @@ const DeveloperTasks = () => {
     </div>
   )
 
-  const filtered = filter === 'all' ? data : data.filter(t => t.status === filter)
+  const statusPriority = {
+  assigned: 1,
+  in_progress: 2,
+  fix_in_progress: 2,
+  bug_found: 2,
+  submitted: 3,
+  in_testing: 4,
+  completed: 5, 
+  }
+
+  const sorted = [...data].sort((a, b) => {
+  return (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99)
+  })
+
+const filtered = filter === 'all'
+  ? sorted
+  : sorted.filter(t => t.status === filter)
 
   // All stat cards — every meaningful status
   const statCards = [

@@ -89,7 +89,7 @@
 
 import axios from "axios";
 import React, { useState } from "react";
-import { toast } from "react-toastify";
+import { successToast, errorToast } from "../utils/toast";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
@@ -120,13 +120,13 @@ const ForgotPassword = () => {
 
       if (res.status === 200) {
         setEmailSent(true);
-        toast.success("Password reset link sent! Check your inbox.");
+        successToast("Password reset link sent! Check your inbox.");
         reset();
       }
     } catch (err) {
       const status = err.response?.status;
-      if (status === 404) toast.error("No account found with this email");
-      else                toast.error(err.response?.data?.message || "Something went wrong. Try again.");
+      if (status === 404) errorToast("No account found with this email");
+      else                errorToast(err.response?.data?.message || "Something went wrong. Try again.");
     } finally {
       setLoading(false);
     }

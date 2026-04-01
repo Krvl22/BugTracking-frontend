@@ -466,7 +466,8 @@ const DeveloperDashboard = () => {
       })
       const data = await res.json()
       if (data.success) setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: 'in_progress' } : t))
-    } catch (err) { console.error(err) }
+         window.dispatchEvent(new Event("notificationUpdated"))
+      } catch (err) { console.error(err) }
   }
 
   // ✅ Simplified to 4 key stat cards — clean layout

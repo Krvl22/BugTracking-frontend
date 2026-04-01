@@ -411,6 +411,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { formatDate } from '../../utils/DateUtils'
+import { successToast, errorToast } from "../../utils/toast"
 
 const statusColor = (s) => ({
   active:    'bg-green-500/20 text-green-400',
@@ -500,13 +501,17 @@ const AdminProjects = () => {
       const data = await res.json()
       if (data.success) {
         setShowAddModal(false)
+        successToast("Project created successfully")
         setForm({ name: '', description: '', projectKey: '', createdBy: storedUser._id || '', startDate: '', endDate: '' })
         fetchProjects()
+         window.dispatchEvent(new Event("notificationUpdated"))
       } else {
         setFormError(data.message || 'Failed to create project')
+        errorToast("Failed to create project")
       }
     } catch (err) {
       setFormError('Server error — check console')
+      errorToast("Server error while creating project")
       console.log(err)
     }
   }
@@ -516,8 +521,11 @@ const AdminProjects = () => {
     if (!window.confirm('Are you sure you want to delete this project? This cannot be undone.')) return
     try {
       await fetch(`http://localhost:3000/projects/${id}`, { method: 'DELETE', headers: jsonHeaders })
+      successToast("Project Deleted Successfully")
       fetchProjects()
-    } catch (err) { console.error(err) }
+    } catch (err) { 
+      errorToast("Failed to delete project")
+      console.error(err) }
   }
 
   const handleStatusChange = async (e, id, status) => {
@@ -526,8 +534,11 @@ const AdminProjects = () => {
       await fetch(`http://localhost:3000/projects/${id}/status`, {
         method: 'PATCH', headers: jsonHeaders, body: JSON.stringify({ status }),
       })
+      successToast(`Project status has been changed to ${status} successfully`)
       fetchProjects()
-    } catch (err) { console.error(err) }
+    } catch (err) { 
+      errorToast("Failed to update project status")
+      console.error(err) }
   }
 
   const filtered = projects

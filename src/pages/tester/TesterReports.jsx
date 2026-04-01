@@ -141,27 +141,32 @@ const TesterReports = () => {
             </div>
 
             {/* Severity breakdown pie */}
+          
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
               <h2 className="text-xl font-bold text-white mb-6">Bug Severity Breakdown</h2>
               {severityData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-slate-400">
-                  <svg className="w-12 h-12 mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <svg className="w-12 h-12 mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                   <p>No bugs yet</p>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={220}>
+                <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
-                    <Pie data={severityData} cx="50%" cy="50%" outerRadius={70} dataKey="value"
-                      label={({ name, percent }) => percent > 0.08 ? `${name} ${Math.round(percent*100)}%` : ''}
-                      labelLine={true}>
+                    <Pie data={severityData} cx="50%" cy="50%" outerRadius={90} dataKey="value">
+                      {severityData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
-                    <Legend wrapperStyle={{ color: '#94a3b8', fontSize: '12px' }} />
+                    <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
+                      formatter={(value, name) => [`${value} bugs`, name]} />
+                    <Legend
+                      formatter={(value) => <span style={{ color: '#94a3b8', fontSize: '13px' }}>{value}</span>}
+                      wrapperStyle={{ paddingTop: '16px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
             </div>
-          </div>
+          </div> 
 
           {/* Monthly trend bar chart */}
           {monthlyData.length > 0 && (

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+import { successToast, errorToast } from "../../utils/toast"
 
 const priorityColor = (p) => ({ high: 'bg-red-500/20 text-red-400', medium: 'bg-yellow-500/20 text-yellow-400', low: 'bg-green-500/20 text-green-400', urgent: 'bg-red-600/30 text-red-300' }[p] || 'bg-slate-500/20 text-slate-400')
 const statusColor   = (s) => ({ to_do: 'bg-slate-500/20 text-slate-400', assigned: 'bg-blue-500/20 text-blue-400', in_progress: 'bg-yellow-500/20 text-yellow-400', submitted: 'bg-purple-500/20 text-purple-400', in_testing: 'bg-cyan-500/20 text-cyan-400', bug_found: 'bg-red-500/20 text-red-400', fix_in_progress: 'bg-orange-500/20 text-orange-400', resubmitted: 'bg-indigo-500/20 text-indigo-400', completed: 'bg-green-500/20 text-green-400' }[s] || 'bg-slate-500/20 text-slate-400')
@@ -14,10 +15,10 @@ const ManagerTasks = () => {
   const [loading, setLoading]             = useState(true)
   const [filter, setFilter]               = useState('all')
   const [assigningTask, setAssigningTask] = useState(null)
-  const [assignUserId, setAssignUserId]   = useState('')
-  const [toast, setToast]                 = useState('')
+  const [assignDeveloperId, setAssignDeveloperId] = useState('')
+  const [assignTesterId, setAssignTesterId] = useState('')
   const [showCreate, setShowCreate]       = useState(false)
-  const [taskForm, setTaskForm]           = useState({ title: '', description: '', project: '', module: '', assignedTo: '', priority: 'medium', dueDate: '' })
+  const [taskForm, setTaskForm]           = useState({ title: '', description: '', project: '', module: '', assignedTo: '', testerId:'',priority: 'medium', dueDate: '' })
   const [taskMsg, setTaskMsg]             = useState('')
   const navigate = useNavigate()
 
@@ -25,7 +26,6 @@ const ManagerTasks = () => {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
-  const showToast    = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
   const fetchData = async () => {
     try {
@@ -59,16 +59,51 @@ const ManagerTasks = () => {
   const selectedProject    = projects.find(p => p._id === taskForm.project)
   const projectTeamMembers = selectedProject?.teamMembers?.filter(m => typeof m === 'object') || []
 
-  const handleAssign = async (taskId, userId) => {
-    try {
-      const res  = await fetch(`http://localhost:3000/tasks/${taskId}`, {
-        method: 'PUT', headers, body: JSON.stringify({ assignedTo: userId, status: 'assigned' }),
-      })
-      const data = await res.json()
-      if (data.success) { showToast('Task assigned!'); setAssigningTask(null); setAssignUserId(''); fetchData() }
-      else showToast(data.message || 'Failed')
-    } catch { showToast('Server error') }
+  // const handleAssign = async (taskId, userId) => {
+  //   try {
+  //     const res  = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+  //       method: 'PUT', headers, body: JSON.stringify({ assignedTo: userId, status: 'assigned' }),
+  //     })
+  //     const data = await res.json()
+  //     if (data.success) { successToast("Task assigned successfully!"); setAssigningTask(null); setAssignUserId(''); fetchData() }
+  //     else errorToast(data.message || 'Failed to assign task')
+  //   } catch { errorToast('Server error while assigning task')}
+  // }
+  const handleAssign = async (taskId) => {
+  try {
+
+    const res = await fetch(`http://localhost:3000/manager/assign-full/${taskId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        developerId: assignDeveloperId,
+        testerId: assignTesterId
+      }),
+    })
+
+    const task = tasks.find(t => t._id === taskId)
+    const isReassign = !!task?.assignedTo
+
+    const data = await res.json()
+
+    if (data.success) {
+      successToast(
+      isReassign
+      ? "Task reassigned successfully"
+      : "Task assigned successfully"
+      )
+      setAssigningTask(null)
+      setAssignDeveloperId('')
+      setAssignTesterId('')
+      fetchData()
+    } else {
+      errorToast(data.message || 'Failed to assign task')
+    }
+
+  } catch {
+    errorToast('Server error while assigning task')
   }
+}
 
   const handleCreateTask = async () => {
     setTaskMsg('')
@@ -82,6 +117,7 @@ const ManagerTasks = () => {
         priority: taskForm.priority,
         ...(taskForm.module     && { module:     taskForm.module }),
         ...(taskForm.assignedTo && { assignedTo: taskForm.assignedTo }),
+        ...(taskForm.testerId  && { testerId: taskForm.testerId }),
         ...(taskForm.dueDate    && { dueDate:    taskForm.dueDate }),
       }
       const res  = await fetch('http://localhost:3000/manager/tasks', {
@@ -90,10 +126,15 @@ const ManagerTasks = () => {
       const data = await res.json()
       if (data.success) {
         setShowCreate(false)
-        setTaskForm({ title: '', description: '', project: '', module: '', assignedTo: '', priority: 'medium', dueDate: '' })
-        showToast('Task created!'); fetchData()
-      } else { setTaskMsg(data.message || data.err || 'Failed') }
-    } catch { setTaskMsg('Server error') }
+        setTaskForm({ title: '', description: '', project: '', module: '', assignedTo: '',testerId: '', priority: 'medium', dueDate: '' })
+        successToast('Task created successfully!'); fetchData()
+        window.dispatchEvent(new Event("notificationUpdated"))
+      } else { setTaskMsg(data.message || data.err || 'Failed') 
+        errorToast("Failed to create Task!")
+      }
+    } catch { setTaskMsg('Server error') 
+      errorToast("Server error while creating task")
+    }
   }
 
   const developers = allUsers.filter(u => u.role === 'developer')
@@ -143,12 +184,6 @@ const ManagerTasks = () => {
         </header>
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
-
-          {toast && (
-            <div className="fixed top-20 right-6 z-50 px-4 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl text-sm font-medium shadow-xl">
-              {toast}
-            </div>
-          )}
 
           {/* ALL 8 status stats — shows complete picture */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -212,7 +247,7 @@ const ManagerTasks = () => {
                         </div>
                       </div>
                       <div className="shrink-0">
-                        {assigningTask === task._id ? (
+                        {/* {assigningTask === task._id ? (
                           <div className="flex items-center gap-2 flex-wrap">
                             <select value={assignUserId} onChange={e => setAssignUserId(e.target.value)}
                               className="px-2 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none min-w-[140px]">
@@ -236,6 +271,104 @@ const ManagerTasks = () => {
                         ) : (
                           <button onClick={() => { setAssigningTask(task._id); setAssignUserId(task.assignedTo?._id || '') }}
                             className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs transition-colors whitespace-nowrap">
+                            {task.assignedTo ? 'Reassign' : 'Assign'}
+                          </button>
+                        )} */}
+                        {assigningTask === task._id ? (
+                          // <div className="flex items-center gap-2 flex-wrap">
+
+                          //   {/* Developer Dropdown */}
+                          //   <select
+                          //     value={assignDeveloperId}
+                          //     onChange={(e) => setAssignDeveloperId(e.target.value)}
+                          //     className="px-2 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs min-w-[140px]"
+                          //   >
+                          //     <option value="">Developer</option>
+                          //     {developers.map(dev => (
+                          //       <option key={dev._id} value={dev._id}>
+                          //         {dev.firstName} {dev.lastName}
+                          //       </option>
+                          //     ))}
+                          //   </select>
+
+                          //   {/* Tester Dropdown */}
+                          //   <select
+                          //     value={assignTesterId}
+                          //     onChange={(e) => setAssignTesterId(e.target.value)}
+                          //     className="px-2 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs min-w-[140px]"
+                          //   >
+                          //     <option value="">Tester</option>
+                          //     {testers.map(t => (
+                          //       <option key={t._id} value={t._id}>
+                          //         {t.firstName} {t.lastName}
+                          //       </option>
+                          //     ))}
+                          //   </select>
+                          <div className="flex items-center gap-3">
+                            {/* Developer */}
+                            <div className="flex flex-col">
+                              <span className="text-[10px] text-blue-400 mb-1">Developer</span>
+                              <select
+                                value={assignDeveloperId}
+                                onChange={(e) => setAssignDeveloperId(e.target.value)}
+                                className="px-3 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:border-blue-500"
+                              >
+                                <option value="" className="bg-slate-800 text-white">Select</option>
+                                {developers.map(dev => (
+                                  <option key={dev._id} value={dev._id} className="bg-slate-800 text-white">
+                                    {dev.firstName} {dev.lastName}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Tester */}
+                            <div className="flex flex-col">
+                              <span className="text-[10px] text-purple-400 mb-1">Tester</span>    
+                              <select
+                                value={assignTesterId}
+                                onChange={(e) => setAssignTesterId(e.target.value)}
+                                className="px-3 py-1.5 bg-slate-800 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:border-blue-500"
+                              >
+                                <option value="" className="bg-slate-800 text-white">Select</option>
+                                {testers.map(t => (
+                                  <option key={t._id} value={t._id} className="bg-slate-800 text-white">
+                                    {t.firstName} {t.lastName}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Confirm */}
+                            <button
+                              onClick={() => handleAssign(task._id)}
+                              className="px-2 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs mt-4"
+                            >
+                              ✓
+                            </button>
+
+                            {/* Cancel */}
+                            <button
+                              onClick={() => {
+                                setAssigningTask(null)
+                                setAssignDeveloperId('')
+                                setAssignTesterId('')
+                              }}
+                              className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg text-xs mt-4"
+                            >
+                              ✕
+                            </button>
+
+                          </div>
+                          ) : (
+                          <button
+                            onClick={() => {
+                              setAssigningTask(task._id)
+                              setAssignDeveloperId(task.assignedTo?._id || '')
+                              setAssignTesterId(task.testedBy?._id || '')
+                            }}
+                            className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs transition-colors whitespace-nowrap"
+                          >
                             {task.assignedTo ? 'Reassign' : 'Assign'}
                           </button>
                         )}
@@ -292,7 +425,7 @@ const ManagerTasks = () => {
                   {modules.map(m => <option key={m._id} value={m._id} className="bg-slate-800 text-white">{m.name}</option>)}
                 </select>
               </div>
-              <div>
+              {/* <div>
                 <label className="text-slate-400 text-xs mb-1 block">Assign To</label>
                 <select value={taskForm.assignedTo} onChange={e => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500"
@@ -313,10 +446,52 @@ const ManagerTasks = () => {
                     </optgroup>
                   )}
                 </select>
+                
                 {taskForm.project && projectTeamMembers.length === 0 && (
                   <p className="text-slate-500 text-xs mt-1">No team members in this project yet.</p>
                 )}
+              </div> */}
+
+              <div>
+                <label className="text-slate-400 text-xs mb-1 block">Assign Developer</label>
+                <select
+                  value={taskForm.assignedTo}
+                  onChange={e => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500"
+                  disabled={!taskForm.project}
+                >
+                  <option value="">— Select Developer —</option>
+
+                  {projectTeamMembers
+                    .filter(m => m.role === 'developer')
+                    .map(m => (
+                      <option key={m._id} value={m._id}>
+                        {m.firstName} {m.lastName}
+                      </option>
+                    ))}
+                </select>
               </div>
+
+              <div>
+                <label className="text-slate-400 text-xs mb-1 block">Assign Tester</label>
+                <select
+                  value={taskForm.testerId}
+                  onChange={e => setTaskForm({ ...taskForm, testerId: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500"
+                  disabled={!taskForm.project}
+                >
+                  <option value="">— Select Tester —</option>
+
+                  {projectTeamMembers
+                    .filter(m => m.role === 'tester')
+                    .map(m => (
+                      <option key={m._id} value={m._id}>
+                        {m.firstName} {m.lastName}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 text-xs mb-1 block">Priority</label>

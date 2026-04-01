@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
-
+import { successToast, errorToast } from "../../utils/toast"
 const roleColor = (r) => r === 'developer' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-orange-500/20 text-orange-400'
 const roleGrad  = (r) => r === 'developer' ? 'from-cyan-500 to-blue-500' : 'from-orange-500 to-red-500'
 
@@ -15,14 +15,12 @@ const ManagerTeam = () => {
   const [addSearch, setAddSearch]     = useState('')
   const [search, setSearch]           = useState('')
   const [roleFilter, setRoleFilter]   = useState('all')
-  const [toast, setToast]             = useState('')
   const navigate = useNavigate()
 
   const token   = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
-  const showToast    = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
   const fetchData = async () => {
     try {
@@ -58,9 +56,11 @@ const ManagerTeam = () => {
         method: 'PATCH', headers, body: JSON.stringify({ userId })
       })
       const data = await res.json()
-      if (data.success) { showToast('Member added!'); fetchData() }
-      else showToast(data.message || 'Failed')
-    } catch { showToast('Server error') }
+      if (data.success) { successToast('Member added!'); fetchData() 
+        window.dispatchEvent(new Event("notificationUpdated"))
+      }
+      else errorToast(data.message || 'Failed')
+    } catch { successToast('Server error') }
   }
 
   const removeMember = async (projectId, userId) => {
@@ -70,9 +70,9 @@ const ManagerTeam = () => {
         method: 'PATCH', headers, body: JSON.stringify({ userId })
       })
       const data = await res.json()
-      if (data.success) { showToast('Member removed.'); fetchData() }
-      else showToast(data.message || 'Failed')
-    } catch { showToast('Server error') }
+      if (data.success) { successToast('Member removed.'); fetchData() }
+      else errorToast(data.message || 'Failed')
+    } catch { successToast('Server error') }
   }
 
   if (loading) return (
@@ -110,12 +110,7 @@ const ManagerTeam = () => {
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
-          {toast && (
-            <div className="fixed top-20 right-6 z-50 px-4 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl text-sm font-medium shadow-xl">
-              {toast}
-            </div>
-          )}
-
+          
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[

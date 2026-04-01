@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+import { successToast, errorToast } from "../../utils/toast"
 
 const severityColor = (s) => ({ low: 'bg-green-500/20 text-green-400', medium: 'bg-yellow-500/20 text-yellow-400', high: 'bg-orange-500/20 text-orange-400', critical: 'bg-red-500/20 text-red-400' }[s] || 'bg-slate-500/20 text-slate-400')
 
@@ -12,14 +13,12 @@ const ManagerBugs = () => {
   const [filter, setFilter]               = useState('all')
   const [reassigningBug, setReassigningBug] = useState(null) // bug._id being reassigned
   const [reassignUserId, setReassignUserId] = useState('')
-  const [toast, setToast]                 = useState('')
   const navigate = useNavigate()
 
   const token   = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
-  const showToast    = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
   const fetchData = async () => {
     try {
@@ -44,9 +43,9 @@ const ManagerBugs = () => {
         body: JSON.stringify({ assignedTo: userId, status: 'fix_in_progress' }),
       })
       const data = await res.json()
-      if (data.success) { showToast('Task reassigned to developer!'); setReassigningBug(null); setReassignUserId(''); fetchData() }
-      else showToast(data.message || 'Failed to reassign')
-    } catch { showToast('Server error') }
+      if (data.success) { successToast('Bug reassigned successfully'); setReassigningBug(null); setReassignUserId(''); fetchData() }
+      else errorToast(data.message || 'Failed to reassign')
+    } catch { errorToast("Server error while reassigning tasks") }
   }
 
   const developers = allUsers.filter(u => u.role === 'developer')
@@ -89,12 +88,6 @@ const ManagerBugs = () => {
         </header>
 
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
-
-          {toast && (
-            <div className="fixed top-20 right-6 z-50 px-4 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl text-sm font-medium shadow-xl">
-              {toast}
-            </div>
-          )}
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
