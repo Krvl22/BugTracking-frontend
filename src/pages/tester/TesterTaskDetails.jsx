@@ -1,102 +1,266 @@
-import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+// import { useState, useEffect } from 'react'
+// import { useParams, useNavigate } from 'react-router-dom'
+// import TesterSidebar from '../../components/tester/TesterSidebar'
+// import { successToast, errorToast } from '../../utils/toast'
+
+// const statusColor = (s) => ({
+//   submitted:       'bg-purple-500/20 text-purple-400',
+//   in_testing:      'bg-cyan-500/20 text-cyan-400',
+//   bug_found:       'bg-red-500/20 text-red-400',
+//   fix_in_progress: 'bg-orange-500/20 text-orange-400',
+//   resubmitted:     'bg-indigo-500/20 text-indigo-400',
+//   completed:       'bg-green-500/20 text-green-400',
+// }[s] || 'bg-slate-500/20 text-slate-400')
+
+// const priorityColor = (p) => ({
+//   urgent: 'bg-red-600/30 text-red-300',
+//   high:   'bg-red-500/20 text-red-400',
+//   medium: 'bg-yellow-500/20 text-yellow-400',
+//   low:    'bg-green-500/20 text-green-400',
+// }[p] || 'bg-slate-500/20 text-slate-400')
+
+// const TesterTaskDetails = () => {
+//   const { id }    = useParams()
+//   const navigate  = useNavigate()
+//   const [task, setTask]         = useState(null)
+//   const [loading, setLoading]   = useState(true)
+//   const [sidebarOpen, setSidebarOpen] = useState(false)
+//   const [approving, setApproving]     = useState(false)
+//   const [activeTab, setActiveTab]     = useState('details') // 'details' | 'chat'
+
+//   const token = localStorage.getItem('token')
+//   const h     = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+
+//   const handleLogout = () => { localStorage.clear(); navigate('/') }
+
+//   useEffect(() => {
+//     const fetch_ = async () => {
+//       try {
+//         const res    = await fetch(`http://localhost:3000/tasks/${id}`, { headers: h })
+//         const result = await res.json()
+//         if (result.success) setTask(result.data)
+//       } catch (err) { console.error(err) }
+//       finally { setLoading(false) }
+//     }
+//     fetch_()
+//   }, [id])
+
+//   const handleApprove = async () => {
+//     setApproving(true)
+//     try {
+//       const res    = await fetch(`http://localhost:3000/tester/tasks/${id}/approve`, { method: 'PATCH', headers: h })
+//       const result = await res.json()
+//       if (result.success) {
+//         successToast('Task approved!')
+//         navigate('/tester/tasks')
+//       } else errorToast(result.message || 'Failed')
+//     } catch { errorToast('Server error') }
+//     setApproving(false)
+//   }
+
+//   if (loading) return (
+//     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+//       <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+//     </div>
+//   )
+
+//   if (!task) return (
+//     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+//       <p className="text-white">Task not found.</p>
+//     </div>
+//   )
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+//       <div className="fixed inset-0 overflow-hidden pointer-events-none">
+//         <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse" />
+//         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700" />
+//       </div>
+
+//       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+
+//       <div className="lg:ml-64">
+//         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
+//           <div className="flex items-center gap-4">
+//             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
+//               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+//               </svg>
+//             </button>
+//             <button onClick={() => navigate('/tester/tasks')} className="text-slate-400 hover:text-white text-sm flex items-center gap-1">
+//               ← Back
+//             </button>
+//             <div>
+//               <h1 className="text-xl font-bold text-white">{task.issueKey}</h1>
+//               <p className="text-slate-300 text-xs">{task.title}</p>
+//             </div>
+//           </div>
+//           <button onClick={handleLogout} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg text-sm">Logout</button>
+//         </header>
+
+//         <main className="p-4 lg:p-8 relative z-10 space-y-6">
+
+//           {/* Tabs */}
+//           <div className="flex gap-2">
+//             {['details', 'chat'].map(tab => (
+//               <button key={tab} onClick={() => setActiveTab(tab)}
+//                 className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all ${
+//                   activeTab === tab
+//                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+//                     : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+//                 }`}>
+//                 {tab === 'chat' ? '💬 Chat History' : '📋 Task Details'}
+//               </button>
+//             ))}
+//           </div>
+
+//           {activeTab === 'details' && (
+//             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//               {/* Task info */}
+//               <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 space-y-4">
+//                 <div className="flex flex-wrap gap-2">
+//                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColor(task.priority)}`}>{task.priority}</span>
+//                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(task.status)}`}>{task.status?.replace(/_/g, ' ')}</span>
+//                 </div>
+//                 <h2 className="text-white text-xl font-semibold">{task.title}</h2>
+//                 <p className="text-slate-300 text-sm">{task.description || 'No description provided.'}</p>
+//                 <div className="grid grid-cols-2 gap-3 text-sm">
+//                   {[
+//                     { label: 'Project',   value: task.project?.name ?? 'N/A' },
+//                     { label: 'Module',    value: task.module?.name  ?? 'N/A' },
+//                     { label: 'Developer', value: task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : 'N/A' },
+//                     { label: 'Due Date',  value: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A' },
+//                   ].map(({ label, value }) => (
+//                     <div key={label} className="p-3 bg-white/5 rounded-xl border border-white/10">
+//                       <p className="text-slate-400 text-xs mb-0.5">{label}</p>
+//                       <p className="text-white text-sm font-medium">{value}</p>
+//                     </div>
+//                   ))}
+//                 </div>
+//                 {task.attachmentUrl && (
+//                   <div>
+//                     <p className="text-slate-400 text-xs mb-2">Attachment</p>
+//                     <img src={task.attachmentUrl} alt="attachment" className="rounded-xl max-h-48 object-cover border border-white/10" />
+//                   </div>
+//                 )}
+//                 {/* Approve button */}
+//                 {['submitted', 'in_testing', 'resubmitted'].includes(task.status) && (
+//                   <button onClick={handleApprove} disabled={approving}
+//                     className="w-full py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-xl text-sm font-medium disabled:opacity-50">
+//                     {approving ? 'Approving...' : '✓ Approve Task'}
+//                   </button>
+//                 )}
+//               </div>
+
+//               {/* Quick info */}
+//               <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+//                 <h3 className="text-white font-semibold mb-4">Timeline</h3>
+//                 <div className="space-y-3 text-sm">
+//                   {[
+//                     { label: 'Created',   value: task.createdAt  ? new Date(task.createdAt).toLocaleString()  : '—' },
+//                     { label: 'Assigned',  value: task.assignedAt ? new Date(task.assignedAt).toLocaleString() : '—' },
+//                     { label: 'Submitted', value: task.submittedAt ? new Date(task.submittedAt).toLocaleString() : '—' },
+//                     { label: 'Completed', value: task.completedAt ? new Date(task.completedAt).toLocaleString() : '—' },
+//                   ].map(({ label, value }) => (
+//                     <div key={label} className="flex justify-between items-center p-2.5 bg-white/5 rounded-lg border border-white/5">
+//                       <span className="text-slate-400">{label}</span>
+//                       <span className="text-white text-xs">{value}</span>
+//                     </div>
+//                   ))}
+//                 </div>
+//               </div>
+//             </div>
+//           )}
+
+//           {activeTab === 'chat' && (
+//             <TaskChat taskId={id} />
+//           )}
+
+//         </main>
+//       </div>
+//     </div>
+//   )
+// }
+
+// export default TesterTaskDetails
+
+
+// TesterTaskdetails.jsx - Updated with Chat History
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'
+import TaskChat from '../../components/common/TaskChat'
 import { successToast, errorToast } from '../../utils/toast'
 
+const statusColor = (s) => ({
+  submitted:       'bg-purple-500/20 text-purple-400',
+  in_testing:      'bg-cyan-500/20 text-cyan-400',
+  bug_found:       'bg-red-500/20 text-red-400',
+  fix_in_progress: 'bg-orange-500/20 text-orange-400',
+  resubmitted:     'bg-indigo-500/20 text-indigo-400',
+  completed:       'bg-green-500/20 text-green-400',
+}[s] || 'bg-slate-500/20 text-slate-400')
+
 const priorityColor = (p) => ({
-  high:   'bg-red-500/20 text-red-400 border-red-500/30',
-  urgent: 'bg-red-600/20 text-red-300 border-red-600/30',
-  medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  low:    'bg-green-500/20 text-green-400 border-green-500/30',
-}[p] || 'bg-slate-500/20 text-slate-400 border-slate-500/30')
+  urgent: 'bg-red-600/30 text-red-300',
+  high:   'bg-red-500/20 text-red-400',
+  medium: 'bg-yellow-500/20 text-yellow-400',
+  low:    'bg-green-500/20 text-green-400',
+}[p] || 'bg-slate-500/20 text-slate-400')
 
 const TesterTaskDetails = () => {
-  const [sidebarOpen, setSidebarOpen]     = useState(false)
-  const [task, setTask]                   = useState(null)
-  const [loading, setLoading]             = useState(true)
-  const [error, setError]                 = useState('')
-  const [approving, setApproving]         = useState(false)
-  const [showBugForm, setShowBugForm]     = useState(false)
-  const [bugForm, setBugForm]             = useState({ comment: '', bugSeverity: 'medium' })
-  const [bugFile, setBugFile]             = useState(null)
-  const [submittingBug, setSubmittingBug] = useState(false)
+  const { id }    = useParams()
+  const navigate  = useNavigate()
+  const [task, setTask]         = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [approving, setApproving]     = useState(false)
+  const [activeTab, setActiveTab]     = useState('details') // 'details' | 'chat'
 
-  const fileRef  = useRef(null)
-  const navigate = useNavigate()
-  const { id }   = useParams()
-  const token    = localStorage.getItem('token')
-  const h        = { Authorization: `Bearer ${token}` }
+  const token = localStorage.getItem('token')
+  const h     = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
   useEffect(() => {
-    const fetchTask = async () => {
+    const fetch_ = async () => {
       try {
-        const res  = await fetch(`http://localhost:3000/tasks/${id}`, { headers: h })
-        const data = await res.json()
-        if (data.success) setTask(data.data)
-        else setError('Task not found')
-      } catch (err) {
-        setError('Failed to load task')
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+        const res    = await fetch(`http://localhost:3000/tasks/${id}`, { headers: h })
+        const result = await res.json()
+        if (result.success) setTask(result.data)
+      } catch (err) { console.error(err) }
+      finally { setLoading(false) }
     }
-    fetchTask()
+    fetch_()
   }, [id])
 
   const handleApprove = async () => {
     setApproving(true)
     try {
-      const res  = await fetch(`http://localhost:3000/tester/tasks/${id}/approve`, { method: 'PATCH', headers: h })
-      const data = await res.json()
-      if (data.success) {
-        successToast('Task approved and marked as completed!')
+      const res    = await fetch(`http://localhost:3000/tester/tasks/${id}/approve`, { method: 'PATCH', headers: h })
+      const result = await res.json()
+      if (result.success) {
+        successToast('Task approved!')
         navigate('/tester/tasks')
-      } else {
-        errorToast(data.message || 'Failed to approve')
-      }
+      } else errorToast(result.message || 'Failed')
     } catch { errorToast('Server error') }
-    finally { setApproving(false) }
-  }
-
-  const handleReportBug = async () => {
-    if (!bugForm.comment.trim() || bugForm.comment.trim().length < 10) {
-      errorToast('Description must be at least 10 characters')
-      return
-    }
-    if (!bugFile) {
-      errorToast('Please attach a screenshot')
-      return
-    }
-    setSubmittingBug(true)
-    try {
-      const fd = new FormData()
-      fd.append('taskId',      id)
-      fd.append('comment',     bugForm.comment.trim())
-      fd.append('bugSeverity', bugForm.bugSeverity)
-      fd.append('attachment',  bugFile)
-      const res  = await fetch('http://localhost:3000/tester/bugs', { method: 'POST', headers: h, body: fd })
-      const data = await res.json()
-      if (data.success) {
-        successToast('Bug reported successfully!')
-        navigate('/tester/tasks')
-      } else {
-        errorToast(data.message || 'Failed to report bug')
-      }
-    } catch { errorToast('Server error') }
-    finally { setSubmittingBug(false) }
+    setApproving(false)
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-      <p className="text-white text-xl">Loading task...</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  if (!task) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <p className="text-white">Task not found.</p>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse" />
         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700" />
@@ -106,196 +270,101 @@ const TesterTaskDetails = () => {
 
       <div className="lg:ml-64">
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <button onClick={() => navigate('/tester/tasks')} className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="text-sm">Back to Tasks</span>
+            <button onClick={() => navigate('/tester/tasks')} className="text-slate-400 hover:text-white text-sm flex items-center gap-1">
+              ← Back
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white">Task Review</h1>
-              {task && <p className="text-slate-300 text-sm font-mono">{task.issueKey}</p>}
+              <h1 className="text-xl font-bold text-white">{task.issueKey}</h1>
+              <p className="text-slate-300 text-xs">{task.title}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {task?.status === 'submitted' && !showBugForm && (
-              <>
-                <button onClick={handleApprove} disabled={approving}
-                  className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg text-sm font-medium transition-all disabled:opacity-50">
-                  {approving ? 'Approving...' : '✓ Approve Task'}
-                </button>
-                <button onClick={() => setShowBugForm(true)}
-                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium transition-all">
-                  Report Bug
-                </button>
-              </>
-            )}
-            <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
-              Logout
-            </button>
-          </div>
+          <button onClick={handleLogout} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg text-sm">Logout</button>
         </header>
 
-        <main className="p-4 lg:p-8 relative z-10 space-y-6 max-w-4xl">
+        <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
-          {error && (
-            <div className="px-4 py-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-sm">{error}</div>
-          )}
+          {/* Tabs */}
+          <div className="flex gap-2">
+            {['details', 'chat'].map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all ${
+                  activeTab === tab
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                    : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+                }`}>
+                {tab === 'chat' ? '💬 Chat History' : '📋 Task Details'}
+              </button>
+            ))}
+          </div>
 
-          {task && (
-            <>
-              {/* Badges */}
-              <div className="flex flex-wrap gap-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${priorityColor(task.priority)}`}>
-                  {task.priority?.charAt(0).toUpperCase() + task.priority?.slice(1)} Priority
-                </span>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                  {task.status?.replace(/_/g, ' ')}
-                </span>
-              </div>
-
-              {/* Title + Description */}
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-                <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
-                {task.description ? (
-                  <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{task.description}</p>
-                ) : (
-                  <p className="text-slate-500 italic">No description provided.</p>
+          {activeTab === 'details' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Task info */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColor(task.priority)}`}>{task.priority}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(task.status)}`}>{task.status?.replace(/_/g, ' ')}</span>
+                </div>
+                <h2 className="text-white text-xl font-semibold">{task.title}</h2>
+                <p className="text-slate-300 text-sm">{task.description || 'No description provided.'}</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {[
+                    { label: 'Project',   value: task.project?.name ?? 'N/A' },
+                    { label: 'Module',    value: task.module?.name  ?? 'N/A' },
+                    { label: 'Developer', value: task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : 'N/A' },
+                    { label: 'Due Date',  value: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="p-3 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-slate-400 text-xs mb-0.5">{label}</p>
+                      <p className="text-white text-sm font-medium">{value}</p>
+                    </div>
+                  ))}
+                </div>
+                {task.attachmentUrl && (
+                  <div>
+                    <p className="text-slate-400 text-xs mb-2">Attachment</p>
+                    <img src={task.attachmentUrl} alt="attachment" className="rounded-xl max-h-48 object-cover border border-white/10" />
+                  </div>
+                )}
+                {/* Approve button */}
+                {['submitted', 'in_testing', 'resubmitted'].includes(task.status) && (
+                  <button onClick={handleApprove} disabled={approving}
+                    className="w-full py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-xl text-sm font-medium disabled:opacity-50">
+                    {approving ? 'Approving...' : '✓ Approve Task'}
+                  </button>
                 )}
               </div>
 
-              {/* Task metadata */}
+              {/* Quick info */}
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-                <h3 className="text-lg font-bold text-white mb-4">Task Info</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <h3 className="text-white font-semibold mb-4">Timeline</h3>
+                <div className="space-y-3 text-sm">
                   {[
-                    { label: 'Issue Key',  value: task.issueKey,                                                          mono: true },
-                    { label: 'Project',    value: task.project?.name ?? 'N/A' },
-                    { label: 'Module',     value: task.module?.name  ?? 'No module' },
-                    { label: 'Developer',  value: task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : '—' },
-                    { label: 'Due Date',   value: task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'No due date' },
-                    { label: 'Submitted',  value: task.submittedAt ? new Date(task.submittedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
-                  ].map(({ label, value, mono }) => (
-                    <div key={label} className="flex justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                    { label: 'Created',   value: task.createdAt  ? new Date(task.createdAt).toLocaleString()  : '—' },
+                    { label: 'Assigned',  value: task.assignedAt ? new Date(task.assignedAt).toLocaleString() : '—' },
+                    { label: 'Submitted', value: task.submittedAt ? new Date(task.submittedAt).toLocaleString() : '—' },
+                    { label: 'Completed', value: task.completedAt ? new Date(task.completedAt).toLocaleString() : '—' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex justify-between items-center p-2.5 bg-white/5 rounded-lg border border-white/5">
                       <span className="text-slate-400">{label}</span>
-                      <span className={`font-medium ${mono ? 'font-mono text-blue-400' : 'text-white'}`}>{value}</span>
+                      <span className="text-white text-xs">{value}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Developer's submitted file — always shown when present */}
-              {task.attachmentUrl && (
-                <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-                  <h3 className="text-lg font-bold text-white mb-4">Developer's Submission File</h3>
-                  {/\.(png|jpg|jpeg|gif|webp)$/i.test(task.attachmentUrl) ? (
-                    <div>
-                      <img
-                        src={task.attachmentUrl}
-                        alt="Submission"
-                        className="rounded-xl max-w-full max-h-96 object-contain border border-white/10 mb-3"
-                      />
-                      <a href={task.attachmentUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-medium transition-all">
-                        Open Full Image
-                      </a>
-                    </div>
-                  ) : (
-                    <a href={task.attachmentUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white transition-all">
-                      <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                      </svg>
-                      Open Submission File
-                    </a>
-                  )}
-                </div>
-              )}
-
-              {/* Bug report form */}
-              {showBugForm && (
-                <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-red-500/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-white">Report a Bug</h3>
-                    <button onClick={() => { setShowBugForm(false); setBugForm({ comment: '', bugSeverity: 'medium' }); setBugFile(null) }}
-                      className="text-slate-400 hover:text-white">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-slate-300 text-sm mb-2 block">Bug Description <span className="text-red-400">*</span></label>
-                      <textarea
-                        value={bugForm.comment}
-                        onChange={e => setBugForm(p => ({ ...p, comment: e.target.value }))}
-                        placeholder="Describe the bug in detail... (min 10 characters)"
-                        rows={5}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
-                      />
-                      {bugForm.comment.length > 0 && bugForm.comment.length < 10 && (
-                        <p className="text-red-400 text-xs mt-1">{10 - bugForm.comment.length} more characters needed</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="text-slate-300 text-sm mb-2 block">Severity</label>
-                      <select value={bugForm.bugSeverity}
-                        onChange={e => setBugForm(p => ({ ...p, bugSeverity: e.target.value }))}
-                        className="w-full sm:w-48 px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="critical">Critical</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-slate-300 text-sm mb-2 block">Screenshot <span className="text-red-400">*</span></label>
-                      <div
-                        onClick={() => fileRef.current?.click()}
-                        className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl cursor-pointer transition-all ${bugFile ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/20 hover:bg-white/10'}`}
-                      >
-                        <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                        <span className={`text-sm truncate ${bugFile ? 'text-green-400' : 'text-slate-400'}`}>
-                          {bugFile ? bugFile.name : 'Click to attach screenshot (PNG, JPG — max 5MB)'}
-                        </span>
-                        {bugFile && (
-                          <button onClick={e => { e.stopPropagation(); setBugFile(null) }}
-                            className="ml-auto text-red-400 text-xs shrink-0">Remove</button>
-                        )}
-                      </div>
-                      <input ref={fileRef} type="file" className="hidden"
-                        accept=".png,.jpg,.jpeg"
-                        onChange={e => setBugFile(e.target.files?.[0] || null)} />
-                    </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleReportBug}
-                        disabled={submittingBug || bugForm.comment.trim().length < 10 || !bugFile}
-                        className="px-6 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
-                      >
-                        {submittingBug ? 'Submitting...' : 'Submit Bug Report'}
-                      </button>
-                      <button
-                        onClick={() => { setShowBugForm(false); setBugForm({ comment: '', bugSeverity: 'medium' }); setBugFile(null) }}
-                        className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-xl text-sm font-medium transition-all"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
+            </div>
           )}
+
+          {activeTab === 'chat' && (
+            <TaskChat taskId={id} />
+          )}
+
         </main>
       </div>
     </div>

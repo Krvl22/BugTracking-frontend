@@ -4,17 +4,31 @@ import TesterSidebar from '../../components/tester/TesterSidebar'
 import NotificationBell from '../../components/NotificationBell'
 import { errorToast, successToast } from '../../utils/toast'
 
+// ✅ Due date indicator helper
+const dueDateLabel = (dueDate, status) => {
+  if (status === 'completed' || !dueDate) return null
+  const diff = (new Date(dueDate) - new Date()) / (1000 * 60 * 60 * 24)
+  if (diff < 0)  return { label: '⚠ Overdue',  cls: 'text-red-400 bg-red-500/10 border border-red-500/30' }
+  if (diff <= 2) return { label: '⏰ Due Soon', cls: 'text-yellow-400 bg-yellow-500/10 border border-yellow-500/30' }
+  return null
+}
+
+const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 }
+
 const TesterTasks = () => {
   const [sidebarOpen, setSidebarOpen]     = useState(false)
   const [data, setData]                   = useState([])
   const [loading, setLoading]             = useState(true)
   const [approving, setApproving]         = useState(null)
   const [reportingTask, setReportingTask] = useState(null)
+  const [rejectingTask, setRejectingTask] = useState(null)   // ✅ NEW
+  const [rejectReason, setRejectReason]   = useState('')     // ✅ NEW
   const [bugForm, setBugForm]             = useState({ comment: '', bugSeverity: 'medium' })
   const [bugFile, setBugFile]             = useState(null)
   const [submittingBug, setSubmittingBug] = useState(false)
+  const [submittingReject, setSubmittingReject] = useState(false) // ✅ NEW
 
-  // Standalone bug report (no task required)
+  // Standalone bug modal
   const [showStandaloneBug, setShowStandaloneBug]       = useState(false)
   const [standaloneBugForm, setStandaloneBugForm]       = useState({ comment: '', bugSeverity: 'medium', taskId: '' })
   const [standaloneBugFile, setStandaloneBugFile]       = useState(null)
@@ -29,6 +43,25 @@ const TesterTasks = () => {
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
+  const fetchData = async () => {
+    const [tRes, allRes] = await Promise.all([
+      fetch('http://localhost:3000/tester/tasks', { headers: h }),
+      fetch('http://localhost:3000/tasks',        { headers: h }),
+    ])
+    const [tResult, allResult] = await Promise.all([tRes.json(), allRes.json()])
+    if (tResult.success) {
+      // ✅ Sort by priority: Critical → High → Medium → Low
+      const sorted = (tResult.data || []).sort(
+        (a, b) => (priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99)
+      )
+      setData(sorted)
+    }
+    if (allResult.success) setAllTasks(allResult.data)
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchData() }, [])
+
   const handleApprove = async (taskId) => {
     setApproving(taskId)
     try {
@@ -36,15 +69,36 @@ const TesterTasks = () => {
       const result = await res.json()
       if (result.success) {
         setData(prev => prev.filter(t => t._id !== taskId))
-        successToast("Task approved successfully!")
+        successToast('Task approved successfully!')
       } else {
-        errorToast(result.message || "Failed to approve task")
+        errorToast(result.message || 'Failed to approve task')
       }
-    } catch (err) {
-      console.error(err)
-      errorToast("Server error while approving task")
-    }
+    } catch (err) { errorToast('Server error') }
     setApproving(null)
+  }
+
+  // ✅ Reject task WITHOUT bug report
+  const handleRejectTask = async (taskId) => {
+    if (!rejectReason.trim() || rejectReason.trim().length < 5) {
+      errorToast('Please provide a rejection reason (min 5 chars)'); return
+    }
+    setSubmittingReject(true)
+    try {
+      const res    = await fetch(`http://localhost:3000/tester/tasks/${taskId}/reject`, {
+        method: 'PATCH', headers: { ...h, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: rejectReason.trim() }),
+      })
+      const result = await res.json()
+      if (result.success) {
+        setData(prev => prev.filter(t => t._id !== taskId))
+        setRejectingTask(null)
+        setRejectReason('')
+        successToast('Task rejected and sent back to developer.')
+      } else {
+        errorToast(result.message || 'Failed to reject task')
+      }
+    } catch { errorToast('Server error') }
+    setSubmittingReject(false)
   }
 
   const handleReportBug = async (taskId) => {
@@ -63,12 +117,10 @@ const TesterTasks = () => {
         setReportingTask(null)
         setBugForm({ comment: '', bugSeverity: 'medium' })
         setBugFile(null)
-        successToast('Bug has been reported successfully!')
+        successToast('Bug reported successfully!')
       }
-    } catch (err) {
-      console.error(err)
-      errorToast('Failed to report bug')
-    } finally { setSubmittingBug(false) }
+    } catch { errorToast('Failed to report bug') }
+    setSubmittingBug(false)
   }
 
   const handleStandaloneReport = async () => {
@@ -87,36 +139,20 @@ const TesterTasks = () => {
         setShowStandaloneBug(false)
         setStandaloneBugForm({ comment: '', bugSeverity: 'medium', taskId: '' })
         setStandaloneBugFile(null)
-        successToast('Bug has been reported successfully!')
+        successToast('Bug reported successfully!')
       }
-    } catch (err) {
-      console.error(err)
-      errorToast('Failed to report bug')
-    } finally { setSubmittingStandalone(false) }
+    } catch { errorToast('Failed to report bug') }
+    setSubmittingStandalone(false)
   }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const [tRes, allRes] = await Promise.all([
-        fetch('http://localhost:3000/tester/tasks', { headers: h }),
-        fetch('http://localhost:3000/tasks',        { headers: h }),
-      ])
-      const [tResult, allResult] = await Promise.all([tRes.json(), allRes.json()])
-      if (tResult.success)   setData(tResult.data)
-      if (allResult.success) setAllTasks(allResult.data)
-      setLoading(false)
-    }
-    fetchData()
-  }, [])
-
   if (loading) return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-      <p className="text-white text-xl">Loading...</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse" />
         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700" />
@@ -124,7 +160,11 @@ const TesterTasks = () => {
 
       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className="lg:ml-64 overflow-y-auto h-screen
+        [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.15)_transparent]
+        [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
+        [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
@@ -134,7 +174,7 @@ const TesterTasks = () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-white">Tasks to Test</h1>
-              <p className="text-slate-300 text-sm">Review and test submitted tasks</p>
+              <p className="text-slate-300 text-sm">Sorted by priority · {data.length} pending</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -143,7 +183,7 @@ const TesterTasks = () => {
               className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium transition-all">
               + Report Bug
             </button>
-            <button onClick={handleLogout} className="px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium transition-all">
+            <button onClick={handleLogout} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium">
               Logout
             </button>
           </div>
@@ -152,135 +192,182 @@ const TesterTasks = () => {
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
           {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Awaiting Test', value: data.length,                                                               color: 'from-blue-500 to-cyan-500' },
-              { label: 'High Priority', value: data.filter(t => t.priority === 'high' || t.priority === 'urgent').length, color: 'from-red-500 to-orange-500' },
-              { label: 'Projects',      value: [...new Set(data.map(t => t.project?._id))].length,                        color: 'from-purple-500 to-pink-500' },
+              { label: 'Awaiting Test',  value: data.length,                                                               color: 'from-blue-500 to-cyan-500' },
+              { label: 'High Priority',  value: data.filter(t => t.priority === 'high' || t.priority === 'urgent').length, color: 'from-red-500 to-orange-500' },
+              { label: 'Projects',       value: [...new Set(data.map(t => t.project?._id))].length,                        color: 'from-purple-500 to-pink-500' },
             ].map((s, i) => (
-              <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+              <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-5 border border-white/20">
                 <p className="text-slate-300 text-sm mb-1">{s.label}</p>
                 <p className="text-3xl font-bold text-white">{s.value}</p>
-                <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                  <div className={`h-full bg-linear-to-r ${s.color}`} style={{ width: '70%' }} />
-                </div>
+                <div className={`w-8 h-1 bg-gradient-to-r ${s.color} rounded-full mt-2`} />
               </div>
             ))}
           </div>
 
-          {/* Tasks */}
+          {/* Tasks List */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
             <h2 className="text-xl font-bold text-white mb-6">Submitted Tasks</h2>
             {data.length === 0 ? (
               <p className="text-slate-400">No tasks awaiting testing.</p>
             ) : (
               <div className="space-y-4">
-                {data.map((task) => (
-                  <div key={task._id}
-                    onClick={() => navigate(`/tester/tasks/${task._id}`)}
-                    className="bg-white/5 rounded-xl p-5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="font-mono text-blue-400 text-sm">{task.issueKey}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            task.priority === 'high' || task.priority === 'urgent' ? 'bg-red-500/20 text-red-400' :
-                            task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
-                          }`}>{task.priority}</span>
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">submitted</span>
-                        </div>
-                        <h3 className="text-white font-semibold mb-2">{task.title}</h3>
-                        <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-                          <span>Project: <span className="text-slate-300">{task.project?.name ?? 'N/A'}</span></span>
-                          <span>Module: <span className="text-slate-300">{task.module?.name ?? 'N/A'}</span></span>
-                          <span>Developer: <span className="text-slate-300">{task.assignedTo?.firstName} {task.assignedTo?.lastName}</span></span>
+                {data.map(task => {
+                  const due = dueDateLabel(task.dueDate, task.status)
+                  return (
+                    <div key={task._id} className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                      {/* Clickable top section */}
+                      <div
+                        onClick={() => navigate(`/tester/tasks/${task._id}`)}
+                        className="p-5 cursor-pointer hover:bg-white/5 transition-all"
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-3">
+                          <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className="font-mono text-blue-400 text-sm">{task.issueKey}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                task.priority === 'urgent' ? 'bg-red-600/30 text-red-300' :
+                                task.priority === 'high'   ? 'bg-red-500/20 text-red-400' :
+                                task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                              }`}>{task.priority}</span>
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">
+                                {task.status?.replace(/_/g, ' ')}
+                              </span>
+                              {/* ✅ Due date indicator */}
+                              {due && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs ${due.cls}`}>{due.label}</span>
+                              )}
+                            </div>
+                            <h3 className="text-white font-semibold mb-2">{task.title}</h3>
+                            <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                              <span>Project: <span className="text-slate-300">{task.project?.name ?? 'N/A'}</span></span>
+                              <span>Module: <span className="text-slate-300">{task.module?.name ?? 'N/A'}</span></span>
+                              <span>Developer: <span className="text-slate-300">{task.assignedTo?.firstName} {task.assignedTo?.lastName}</span></span>
+                              {task.dueDate && <span>Due: <span className="text-slate-300">{new Date(task.dueDate).toLocaleDateString()}</span></span>}
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {reportingTask !== task._id && (
-                        <div className="flex gap-2 shrink-0">
-                          <button
-                            onClick={e => { e.stopPropagation(); handleApprove(task._id) }}
-                            disabled={approving === task._id}
-                            className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg text-sm font-medium disabled:opacity-50">
-                            {approving === task._id ? 'Approving...' : 'Approve'}
-                          </button>
-                          <button
-                            onClick={e => { e.stopPropagation(); setReportingTask(task._id); setBugForm({ comment: '', bugSeverity: 'medium' }); setBugFile(null) }}
-                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium">
-                            Report Bug
-                          </button>
+                      {/* Action buttons */}
+                      {reportingTask !== task._id && rejectingTask !== task._id && (
+                        <div className="px-5 pb-5 pt-0 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                          <div className="flex flex-wrap gap-2 pt-3">
+                            <button
+                              onClick={() => handleApprove(task._id)}
+                              disabled={approving === task._id}
+                              className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg text-sm font-medium disabled:opacity-50">
+                              {approving === task._id ? 'Approving...' : '✓ Approve'}
+                            </button>
+                            <button
+                              onClick={() => { setReportingTask(task._id); setBugForm({ comment: '', bugSeverity: 'medium' }); setBugFile(null) }}
+                              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium">
+                              🐛 Report Bug
+                            </button>
+                            {/* ✅ NEW: Reject without bug */}
+                            <button
+                              onClick={() => { setRejectingTask(task._id); setRejectReason('') }}
+                              className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg text-sm font-medium">
+                              ✕ Reject Task
+                            </button>
+                          </div>
                         </div>
                       )}
-                    </div>
 
-                    {/* Bug form inline */}
-                    {reportingTask === task._id && (
-                      <div className="border-t border-white/10 pt-4 mt-2" onClick={e => e.stopPropagation()}>
-                        <h4 className="text-white font-medium mb-3 text-sm">Report a Bug</h4>
-                        <div className="space-y-3">
-                          <textarea value={bugForm.comment}
-                            onChange={e => setBugForm(prev => ({ ...prev, comment: e.target.value }))}
-                            placeholder="Describe the bug in detail (min 10 characters)..."
-                            rows={4}
-                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-                          <div>
-                            <label className="text-slate-400 text-xs mb-1 block">Bug Severity</label>
-                            <select value={bugForm.bugSeverity}
-                              onChange={e => setBugForm(prev => ({ ...prev, bugSeverity: e.target.value }))}
-                              className="w-full sm:w-48 px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                              <option value="low">Low</option>
-                              <option value="medium">Medium</option>
-                              <option value="high">High</option>
-                              <option value="critical">Critical</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-slate-400 text-xs mb-1 block">
-                              Attach Screenshot / File <span className="text-red-400">*</span>
-                            </label>
-                            <div onClick={() => fileRef.current?.click()}
-                              className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl cursor-pointer transition-all ${bugFile ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/20 hover:bg-white/10'}`}>
-                              <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                              </svg>
-                              <span className={`text-sm truncate ${bugFile ? 'text-green-400' : 'text-slate-400'}`}>
-                                {bugFile ? bugFile.name : 'Click to attach screenshot (required)'}
-                              </span>
-                              {bugFile && (
-                                <button onClick={e => { e.stopPropagation(); setBugFile(null) }}
-                                  className="ml-auto text-red-400 hover:text-red-300 text-xs shrink-0">Remove</button>
-                              )}
-                            </div>
-                            <input ref={fileRef} type="file" className="hidden"
-                              onChange={e => setBugFile(e.target.files?.[0] || null)} />
-                          </div>
+                      {/* ✅ Reject form */}
+                      {rejectingTask === task._id && (
+                        <div className="px-5 pb-5 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                          <h4 className="text-orange-400 font-medium text-sm mt-4 mb-3">Reject Task — Add Reason</h4>
+                          <textarea
+                            value={rejectReason}
+                            onChange={e => setRejectReason(e.target.value)}
+                            placeholder="Why are you rejecting this task? (min 5 characters)"
+                            rows={3}
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-orange-500 resize-none mb-3"
+                          />
                           <div className="flex gap-2">
-                            <button onClick={() => handleReportBug(task._id)}
-                              disabled={submittingBug || bugForm.comment.trim().length < 10 || !bugFile}
-                              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium disabled:opacity-50">
-                              {submittingBug ? 'Submitting...' : 'Submit Bug'}
+                            <button
+                              onClick={() => handleRejectTask(task._id)}
+                              disabled={submittingReject || rejectReason.trim().length < 5}
+                              className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg text-sm font-medium disabled:opacity-50">
+                              {submittingReject ? 'Rejecting...' : 'Confirm Reject'}
                             </button>
-                            <button onClick={() => { setReportingTask(null); setBugForm({ comment: '', bugSeverity: 'medium' }); setBugFile(null) }}
+                            <button
+                              onClick={() => { setRejectingTask(null); setRejectReason('') }}
                               className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-lg text-sm font-medium">
                               Cancel
                             </button>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+
+                      {/* Bug report form inline */}
+                      {reportingTask === task._id && (
+                        <div className="px-5 pb-5 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                          <h4 className="text-red-400 font-medium text-sm mt-4 mb-3">🐛 Report a Bug</h4>
+                          <div className="space-y-3">
+                            <textarea value={bugForm.comment}
+                              onChange={e => setBugForm(p => ({ ...p, comment: e.target.value }))}
+                              placeholder="Describe the bug in detail (min 10 characters)..."
+                              rows={4}
+                              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none" />
+                            <div>
+                              <label className="text-slate-400 text-xs mb-1 block">Bug Severity</label>
+                              <select value={bugForm.bugSeverity}
+                                onChange={e => setBugForm(p => ({ ...p, bugSeverity: e.target.value }))}
+                                className="w-full sm:w-48 px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-slate-400 text-xs mb-1 block">Attach Screenshot <span className="text-red-400">*</span></label>
+                              <div onClick={() => fileRef.current?.click()}
+                                className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl cursor-pointer transition-all ${bugFile ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/20 hover:bg-white/10'}`}>
+                                <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span className={`text-sm truncate ${bugFile ? 'text-green-400' : 'text-slate-400'}`}>
+                                  {bugFile ? bugFile.name : 'Click to attach screenshot (required)'}
+                                </span>
+                                {bugFile && (
+                                  <button onClick={e => { e.stopPropagation(); setBugFile(null) }}
+                                    className="ml-auto text-red-400 text-xs shrink-0">Remove</button>
+                                )}
+                              </div>
+                              <input ref={fileRef} type="file" className="hidden" onChange={e => setBugFile(e.target.files?.[0] || null)} />
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => handleReportBug(task._id)}
+                                disabled={submittingBug || bugForm.comment.trim().length < 10 || !bugFile}
+                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium disabled:opacity-50">
+                                {submittingBug ? 'Submitting...' : 'Submit Bug'}
+                              </button>
+                              <button onClick={() => { setReportingTask(null); setBugForm({ comment: '', bugSeverity: 'medium' }); setBugFile(null) }}
+                                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-lg text-sm font-medium">
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
         </main>
       </div>
 
-      {/* STANDALONE BUG REPORT MODAL */}
+      {/* Standalone Bug Report Modal */}
       {showStandaloneBug && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="backdrop-blur-xl bg-slate-900/95 border border-white/20 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="backdrop-blur-xl bg-slate-900/95 border border-white/20 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">Report a Bug</h2>
               <button onClick={() => setShowStandaloneBug(false)} className="text-slate-400 hover:text-white">
@@ -321,9 +408,7 @@ const TesterTasks = () => {
                 </select>
               </div>
               <div>
-                <label className="text-slate-300 text-sm mb-1 block">
-                  Screenshot / File <span className="text-red-400">*</span>
-                </label>
+                <label className="text-slate-300 text-sm mb-1 block">Screenshot / File <span className="text-red-400">*</span></label>
                 <div onClick={() => standaloneFileRef.current?.click()}
                   className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl cursor-pointer transition-all ${standaloneBugFile ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/20 hover:bg-white/10'}`}>
                   <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,12 +418,10 @@ const TesterTasks = () => {
                     {standaloneBugFile ? standaloneBugFile.name : 'Click to attach screenshot (required)'}
                   </span>
                   {standaloneBugFile && (
-                    <button onClick={e => { e.stopPropagation(); setStandaloneBugFile(null) }}
-                      className="ml-auto text-red-400 text-xs shrink-0">Remove</button>
+                    <button onClick={e => { e.stopPropagation(); setStandaloneBugFile(null) }} className="ml-auto text-red-400 text-xs">Remove</button>
                   )}
                 </div>
-                <input ref={standaloneFileRef} type="file" className="hidden"
-                  onChange={e => setStandaloneBugFile(e.target.files?.[0] || null)} />
+                <input ref={standaloneFileRef} type="file" className="hidden" onChange={e => setStandaloneBugFile(e.target.files?.[0] || null)} />
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={handleStandaloneReport}

@@ -1,94 +1,124 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import TesterSidebar from '../../components/tester/TesterSidebar'
+import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+import TaskChat from '../../components/common/TaskChat'
 import { successToast, errorToast } from '../../utils/toast'
 
+const taskStatusColor = (s) => ({
+  to_do:           'bg-slate-500/20 text-slate-400',
+  assigned:        'bg-blue-500/20 text-blue-400',
+  in_progress:     'bg-yellow-500/20 text-yellow-400',
+  submitted:       'bg-purple-500/20 text-purple-400',
+  in_testing:      'bg-cyan-500/20 text-cyan-400',
+  bug_found:       'bg-red-500/20 text-red-400',
+  fix_in_progress: 'bg-orange-500/20 text-orange-400',
+  resubmitted:     'bg-indigo-500/20 text-indigo-400',
+  completed:       'bg-green-500/20 text-green-400',
+}[s] || 'bg-slate-500/20 text-slate-400')
+
 const priorityColor = (p) => ({
-  high:   'bg-red-500/20 text-red-400 border-red-500/30',
-  urgent: 'bg-red-600/20 text-red-300 border-red-600/30',
-  medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   low:    'bg-green-500/20 text-green-400 border-green-500/30',
+  medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  high:   'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  urgent: 'bg-red-500/20 text-red-400 border-red-500/30',
 }[p] || 'bg-slate-500/20 text-slate-400 border-slate-500/30')
 
-const TesterTaskDetails = () => {
-  const [sidebarOpen, setSidebarOpen]     = useState(false)
-  const [task, setTask]                   = useState(null)
-  const [loading, setLoading]             = useState(true)
-  const [error, setError]                 = useState('')
-  const [approving, setApproving]         = useState(false)
-  const [showBugForm, setShowBugForm]     = useState(false)
-  const [bugForm, setBugForm]             = useState({ comment: '', bugSeverity: 'medium' })
-  const [bugFile, setBugFile]             = useState(null)
-  const [submittingBug, setSubmittingBug] = useState(false)
+const severityColor = (s) => ({
+  critical: 'bg-red-500/20 text-red-400',
+  high:     'bg-orange-500/20 text-orange-400',
+  medium:   'bg-yellow-500/20 text-yellow-400',
+  low:      'bg-green-500/20 text-green-400',
+}[s] || 'bg-slate-500/20 text-slate-400')
 
-  const fileRef  = useRef(null)
+const ManagerTaskDetails = () => {
+  const [sidebarOpen, setSidebarOpen]   = useState(false)
+  const [task, setTask]                 = useState(null)
+  const [bugs, setBugs]                 = useState([])
+  const [testers, setTesters]           = useState([])
+  const [developers, setDevelopers]     = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState('')
+  const [activeTab, setActiveTab]       = useState('details')
+  const [assigningTester, setAssigningTester]   = useState(false)
+  const [selectedTester, setSelectedTester]     = useState('')
+  const [assigningDev, setAssigningDev]         = useState(false)
+  const [selectedDev, setSelectedDev]           = useState('')
+
   const navigate = useNavigate()
   const { id }   = useParams()
   const token    = localStorage.getItem('token')
   const h        = { Authorization: `Bearer ${token}` }
+  const jh       = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        const res  = await fetch(`http://localhost:3000/tasks/${id}`, { headers: h })
-        const data = await res.json()
-        if (data.success) setTask(data.data)
-        else setError('Task not found')
-      } catch (err) {
-        setError('Failed to load task')
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchTask()
-  }, [id])
-
-  // ✅ Approve task → completed
-  const handleApprove = async () => {
-    setApproving(true)
+  const fetchTask = async () => {
     try {
-      const res  = await fetch(`http://localhost:3000/tester/tasks/${id}/approve`, { method: 'PATCH', headers: h })
-      const data = await res.json()
-      if (data.success) {
-        successToast('Task approved and marked as completed!')
-        navigate('/tester/tasks')
-      } else {
-        errorToast(data.message || 'Failed to approve')
+      const [taskRes, bugRes, teamRes] = await Promise.all([
+        fetch(`http://localhost:3000/tasks/${id}`,             { headers: h }),
+        fetch(`http://localhost:3000/bugcomments/task/${id}`,  { headers: h }),
+        fetch('http://localhost:3000/manager/team',            { headers: h }),
+      ])
+      const [taskData, bugData, teamData] = await Promise.all([taskRes.json(), bugRes.json(), teamRes.json()])
+
+      if (taskData.success) setTask(taskData.data)
+      else setError('Task not found')
+
+      if (bugData.success) setBugs(bugData.data || [])
+
+      if (teamData.success) {
+        const team = teamData.data || []
+        setTesters(team.filter(u => u.role === 'tester'))
+        setDevelopers(team.filter(u => u.role === 'developer'))
       }
-    } catch { errorToast('Server error') }
-    finally { setApproving(false) }
+    } catch (err) {
+      setError('Failed to load task')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // ✅ Report bug on task
-  const handleReportBug = async () => {
-    if (!bugForm.comment.trim() || bugForm.comment.trim().length < 10) {
-      errorToast('Description must be at least 10 characters')
-      return
-    }
-    if (!bugFile) {
-      errorToast('Please attach a screenshot')
-      return
-    }
-    setSubmittingBug(true)
+  useEffect(() => { fetchTask() }, [id])
+
+  const handleAssignTester = async () => {
+    if (!selectedTester) return
+    setAssigningTester(true)
     try {
-      const fd = new FormData()
-      fd.append('taskId',      id)
-      fd.append('comment',     bugForm.comment.trim())
-      fd.append('bugSeverity', bugForm.bugSeverity)
-      fd.append('attachment',  bugFile)
-      const res  = await fetch('http://localhost:3000/tester/bugs', { method: 'POST', headers: h, body: fd })
+      const res  = await fetch(`http://localhost:3000/manager/assign-tester/${id}`, {
+        method: 'PUT', headers: jh,
+        body: JSON.stringify({ testerId: selectedTester }),
+      })
       const data = await res.json()
       if (data.success) {
-        successToast('Bug reported successfully!')
-        navigate('/tester/tasks')
+        successToast('Tester assigned successfully!')
+        setSelectedTester('')
+        fetchTask()
       } else {
-        errorToast(data.message || 'Failed to report bug')
+        errorToast(data.message || 'Failed to assign tester')
       }
     } catch { errorToast('Server error') }
-    finally { setSubmittingBug(false) }
+    finally { setAssigningTester(false) }
+  }
+
+  const handleAssignDev = async () => {
+    if (!selectedDev) return
+    setAssigningDev(true)
+    try {
+      const res  = await fetch(`http://localhost:3000/manager/assign-dev/${id}`, {
+        method: 'PUT', headers: jh,
+        body: JSON.stringify({ developerId: selectedDev }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        successToast('Developer reassigned successfully!')
+        setSelectedDev('')
+        fetchTask()
+      } else {
+        errorToast(data.message || 'Failed to reassign developer')
+      }
+    } catch { errorToast('Server error') }
+    finally { setAssigningDev(false) }
   }
 
   if (loading) return (
@@ -104,7 +134,7 @@ const TesterTaskDetails = () => {
         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700" />
       </div>
 
-      <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div className="lg:ml-64">
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
@@ -114,37 +144,23 @@ const TesterTaskDetails = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <button onClick={() => navigate('/tester/tasks')} className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
+            <button onClick={() => navigate('/manager/tasks')} className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               <span className="text-sm">Back to Tasks</span>
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white">Task Review</h1>
+              <h1 className="text-2xl font-bold text-white">Task Details</h1>
               {task && <p className="text-slate-300 text-sm font-mono">{task.issueKey}</p>}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {task?.status === 'submitted' && !showBugForm && (
-              <>
-                <button onClick={handleApprove} disabled={approving}
-                  className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg text-sm font-medium transition-all disabled:opacity-50">
-                  {approving ? 'Approving...' : '✓ Approve Task'}
-                </button>
-                <button onClick={() => setShowBugForm(true)}
-                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium transition-all">
-                  🐛 Report Bug
-                </button>
-              </>
-            )}
-            <button onClick={handleLogout} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-all">
-              Logout
-            </button>
-          </div>
+          <button onClick={handleLogout} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-all">
+            Logout
+          </button>
         </header>
 
-        <main className="p-4 lg:p-8 relative z-10 space-y-6 max-w-4xl">
+        <main className="p-4 lg:p-8 relative z-10 space-y-6 max-w-5xl">
 
           {error && (
             <div className="px-4 py-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-sm">{error}</div>
@@ -157,141 +173,178 @@ const TesterTaskDetails = () => {
                 <span className={`px-3 py-1 rounded-full text-sm font-medium border ${priorityColor(task.priority)}`}>
                   {task.priority?.charAt(0).toUpperCase() + task.priority?.slice(1)} Priority
                 </span>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${taskStatusColor(task.status)}`}>
                   {task.status?.replace(/_/g, ' ')}
                 </span>
               </div>
 
-              {/* Title + Description */}
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-                <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
-                {task.description ? (
-                  <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{task.description}</p>
-                ) : (
-                  <p className="text-slate-500 italic">No description provided.</p>
-                )}
+              {/* Tabs */}
+              <div className="flex gap-2">
+                {[
+                  { key: 'details', label: '📋 Details' },
+                  { key: 'chat',    label: '💬 Chat' },
+                ].map(tab => (
+                  <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      activeTab === tab.key
+                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                        : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+                    }`}>
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
-              {/* Task metadata */}
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-                <h3 className="text-lg font-bold text-white mb-4">Task Info</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  {[
-                    { label: 'Issue Key',  value: task.issueKey,                                                          mono: true },
-                    { label: 'Project',    value: task.project?.name ?? 'N/A' },
-                    { label: 'Module',     value: task.module?.name  ?? 'No module' },
-                    { label: 'Developer',  value: task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : '—' },
-                    { label: 'Due Date',   value: task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'No due date' },
-                    { label: 'Submitted',  value: task.submittedAt ? new Date(task.submittedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
-                  ].map(({ label, value, mono }) => (
-                    <div key={label} className="flex justify-between p-3 bg-white/5 rounded-xl border border-white/10">
-                      <span className="text-slate-400">{label}</span>
-                      <span className={`font-medium ${mono ? 'font-mono text-blue-400' : 'text-white'}`}>{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {activeTab === 'details' && (
+                <div className="space-y-6">
+                  {/* Title + Description */}
+                  <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                    <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
+                    {task.description ? (
+                      <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{task.description}</p>
+                    ) : (
+                      <p className="text-slate-500 italic">No description provided.</p>
+                    )}
+                  </div>
 
-              {/* Developer's submitted file */}
-              {task.attachmentUrl && (
-                <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-                  <h3 className="text-lg font-bold text-white mb-4">Developer's Submission File</h3>
-                  {/\.(png|jpg|jpeg|gif|webp)$/i.test(task.attachmentUrl) ? (
-                    <div>
-                      <img src={task.attachmentUrl} alt="Submission"
-                        className="rounded-xl max-w-full max-h-96 object-contain border border-white/10 mb-3" />
-                      <a href={task.attachmentUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-medium transition-all">
-                        Open Full Image
-                      </a>
+                  {/* Task metadata */}
+                  <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                    <h3 className="text-lg font-bold text-white mb-4">Task Info</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      {[
+                        { label: 'Issue Key',   value: task.issueKey,  mono: true },
+                        { label: 'Project',     value: task.project?.name ?? 'N/A' },
+                        { label: 'Module',      value: task.module?.name  ?? 'No module' },
+                        { label: 'Developer',   value: task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : '—' },
+                        { label: 'Tester',      value: task.testedBy   ? `${task.testedBy.firstName} ${task.testedBy.lastName}` : 'Not assigned' },
+                        { label: 'Created By',  value: task.createdBy  ? `${task.createdBy.firstName} ${task.createdBy.lastName}` : '—' },
+                        { label: 'Due Date',    value: task.dueDate    ? new Date(task.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'No due date' },
+                        { label: 'Submitted',   value: task.submittedAt ? new Date(task.submittedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
+                      ].map(({ label, value, mono }) => (
+                        <div key={label} className="flex justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                          <span className="text-slate-400">{label}</span>
+                          <span className={`font-medium ${mono ? 'font-mono text-blue-400' : 'text-white'}`}>{value}</span>
+                        </div>
+                      ))}
                     </div>
-                  ) : (
-                    <a href={task.attachmentUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white transition-all">
-                      <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                      </svg>
-                      Open Submission File
-                    </a>
+                  </div>
+
+                  {/* Manager Actions */}
+                  <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                    <h3 className="text-lg font-bold text-white mb-4">Manager Actions</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Assign Tester */}
+                      <div>
+                        <label className="text-slate-400 text-sm mb-2 block">Assign Tester</label>
+                        <div className="flex gap-2">
+                          <select value={selectedTester} onChange={e => setSelectedTester(e.target.value)}
+                            className="flex-1 px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
+                            <option value="">— Select tester —</option>
+                            {testers.map(u => (
+                              <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>
+                            ))}
+                          </select>
+                          <button onClick={handleAssignTester} disabled={!selectedTester || assigningTester}
+                            className="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 rounded-lg text-sm transition-all disabled:opacity-50">
+                            {assigningTester ? '...' : 'Assign'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Reassign Developer */}
+                      <div>
+                        <label className="text-slate-400 text-sm mb-2 block">Reassign Developer</label>
+                        <div className="flex gap-2">
+                          <select value={selectedDev} onChange={e => setSelectedDev(e.target.value)}
+                            className="flex-1 px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
+                            <option value="">— Select developer —</option>
+                            {developers.map(u => (
+                              <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>
+                            ))}
+                          </select>
+                          <button onClick={handleAssignDev} disabled={!selectedDev || assigningDev}
+                            className="px-3 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg text-sm transition-all disabled:opacity-50">
+                            {assigningDev ? '...' : 'Assign'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submission file */}
+                  {task.attachmentUrl && (
+                    <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                      <h3 className="text-lg font-bold text-white mb-4">Submission File</h3>
+                      {/\.(png|jpg|jpeg|gif|webp)$/i.test(task.attachmentUrl) ? (
+                        <div>
+                          <img src={task.attachmentUrl} alt="Submission"
+                            className="rounded-xl max-w-full max-h-96 object-contain border border-white/10 mb-3" />
+                          <a href={task.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-medium transition-all">
+                            Open Full Image
+                          </a>
+                        </div>
+                      ) : (
+                        <a href={task.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white transition-all">
+                          <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                          </svg>
+                          Open Attachment
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Bugs on this task */}
+                  {bugs.length > 0 && (
+                    <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                      <h3 className="text-lg font-bold text-white mb-4">
+                        Bugs Reported
+                        <span className="text-sm font-normal text-slate-400 ml-2">{bugs.length} bug{bugs.length > 1 ? 's' : ''}</span>
+                      </h3>
+                      <div className="space-y-3">
+                        {bugs.map(bug => (
+                          <div key={bug._id} className="p-4 bg-white/5 rounded-xl border border-white/10">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${severityColor(bug.bugSeverity)}`}>
+                                {bug.bugSeverity}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${bug.resolved ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                {bug.resolved ? 'Resolved' : 'Open'}
+                              </span>
+                              <span className="text-slate-500 text-xs ml-auto">
+                                by {bug.commentedBy?.firstName} {bug.commentedBy?.lastName}
+                              </span>
+                            </div>
+                            <p className="text-slate-200 text-sm leading-relaxed">{bug.comment}</p>
+                            {bug.attachmentUrl && (
+                              <a href={bug.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 mt-2 text-blue-400 text-xs hover:text-blue-300">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                View attachment
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
 
-              {/* Bug report form */}
-              {showBugForm && (
-                <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-red-500/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-white">Report a Bug</h3>
-                    <button onClick={() => { setShowBugForm(false); setBugForm({ comment: '', bugSeverity: 'medium' }); setBugFile(null) }}
-                      className="text-slate-400 hover:text-white">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-slate-300 text-sm mb-2 block">Bug Description <span className="text-red-400">*</span></label>
-                      <textarea
-                        value={bugForm.comment}
-                        onChange={e => setBugForm(p => ({ ...p, comment: e.target.value }))}
-                        placeholder="Describe the bug in detail... (min 10 characters)"
-                        rows={5}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
-                      />
-                      {bugForm.comment.length > 0 && bugForm.comment.length < 10 && (
-                        <p className="text-red-400 text-xs mt-1">{10 - bugForm.comment.length} more characters needed</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="text-slate-300 text-sm mb-2 block">Severity</label>
-                      <select value={bugForm.bugSeverity}
-                        onChange={e => setBugForm(p => ({ ...p, bugSeverity: e.target.value }))}
-                        className="w-full sm:w-48 px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="critical">Critical</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-slate-300 text-sm mb-2 block">Screenshot <span className="text-red-400">*</span></label>
-                      <div
-                        onClick={() => fileRef.current?.click()}
-                        className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl cursor-pointer transition-all ${bugFile ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/20 hover:bg-white/10'}`}
-                      >
-                        <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                        <span className={`text-sm truncate ${bugFile ? 'text-green-400' : 'text-slate-400'}`}>
-                          {bugFile ? bugFile.name : 'Click to attach screenshot (PNG, JPG — max 5MB)'}
-                        </span>
-                        {bugFile && (
-                          <button onClick={e => { e.stopPropagation(); setBugFile(null) }}
-                            className="ml-auto text-red-400 text-xs shrink-0">Remove</button>
-                        )}
-                      </div>
-                      <input ref={fileRef} type="file" className="hidden"
-                        accept=".png,.jpg,.jpeg"
-                        onChange={e => setBugFile(e.target.files?.[0] || null)} />
-                    </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleReportBug}
-                        disabled={submittingBug || bugForm.comment.trim().length < 10 || !bugFile}
-                        className="px-6 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
-                        title={!bugFile ? 'Screenshot required' : bugForm.comment.trim().length < 10 ? 'Description too short' : ''}
-                      >
-                        {submittingBug ? 'Submitting...' : 'Submit Bug Report'}
-                      </button>
-                      <button
-                        onClick={() => { setShowBugForm(false); setBugForm({ comment: '', bugSeverity: 'medium' }); setBugFile(null) }}
-                        className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-xl text-sm font-medium transition-all"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+              {/* Chat Tab */}
+              {activeTab === 'chat' && (
+                <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                  <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    Task Chat
+                  </h3>
+                  <TaskChat taskId={id} />
                 </div>
               )}
             </>
@@ -302,4 +355,4 @@ const TesterTaskDetails = () => {
   )
 }
 
-export default TesterTaskDetails
+export default ManagerTaskDetails

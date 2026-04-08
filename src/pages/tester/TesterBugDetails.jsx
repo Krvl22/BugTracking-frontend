@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'
+import TaskChat from '../../components/common/TaskChat'
 
 const severityColor = (s) => ({
   critical: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -13,19 +14,17 @@ const TesterBugDetails = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [bug, setBug]                 = useState(null)
   const [loading, setLoading]         = useState(true)
-  const [toast, setToast]             = useState('')
+  const [activeTab, setActiveTab]     = useState('details')
   const navigate = useNavigate()
   const { id }   = useParams()
   const token    = localStorage.getItem('token')
   const user     = JSON.parse(localStorage.getItem('user') || '{}')
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
   useEffect(() => {
     const fetchBug = async () => {
       try {
-        // Fetch from tester bugs list and find matching id — simple approach
         const res    = await fetch(`http://localhost:3000/tester/bugs?userId=${user._id}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
@@ -62,12 +61,6 @@ const TesterBugDetails = () => {
         <div className="absolute w-96 h-96 bg-red-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700" />
       </div>
 
-      {toast && (
-        <div className="fixed top-20 right-6 z-50 px-4 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl text-sm font-medium shadow-xl">
-          {toast}
-        </div>
-      )}
-
       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div className="lg:ml-64">
@@ -100,60 +93,93 @@ const TesterBugDetails = () => {
             </span>
           </div>
 
-          {/* Bug description */}
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-            <h2 className="text-lg font-bold text-white mb-4">Bug Description</h2>
-            <p className="text-slate-200 leading-relaxed whitespace-pre-wrap">{bug.comment}</p>
+          {/* Tabs */}
+          <div className="flex gap-2">
+            {[
+              { key: 'details', label: '🐛 Details' },
+              { key: 'chat',    label: '💬 Chat' },
+            ].map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === tab.key
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                    : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+                }`}>
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Linked task */}
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-            <h3 className="text-lg font-bold text-white mb-4">Linked Task</h3>
-            <div className="space-y-3 text-sm">
-              {[
-                { label: 'Issue Key',   value: bug.task?.issueKey ?? 'N/A', mono: true },
-                { label: 'Task Title',  value: bug.task?.title   ?? 'N/A' },
-                { label: 'Reported On', value: bug.createdAt ? new Date(bug.createdAt).toLocaleString() : '—' },
-              ].map(({ label, value, mono }) => (
-                <div key={label} className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/10">
-                  <span className="text-slate-400">{label}</span>
-                  <span className={`font-medium ${mono ? 'font-mono text-blue-400' : 'text-white'}`}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Resolution info */}
-          {bug.resolved && bug.resolvedAt && (
-            <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-              <h3 className="text-lg font-bold text-white mb-3">Resolution</h3>
-              <div className="flex justify-between p-3 bg-green-500/10 rounded-xl border border-green-500/20 text-sm">
-                <span className="text-slate-400">Resolved At</span>
-                <span className="text-green-400 font-medium">{new Date(bug.resolvedAt).toLocaleDateString()}</span>
+          {activeTab === 'details' && (
+            <div className="space-y-6">
+              {/* Bug description */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                <h2 className="text-lg font-bold text-white mb-4">Bug Description</h2>
+                <p className="text-slate-200 leading-relaxed whitespace-pre-wrap">{bug.comment}</p>
               </div>
+
+              {/* Linked task */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                <h3 className="text-lg font-bold text-white mb-4">Linked Task</h3>
+                <div className="space-y-3 text-sm">
+                  {[
+                    { label: 'Issue Key',   value: bug.task?.issueKey ?? 'N/A', mono: true },
+                    { label: 'Task Title',  value: bug.task?.title   ?? 'N/A' },
+                    { label: 'Reported On', value: bug.createdAt ? new Date(bug.createdAt).toLocaleString() : '—' },
+                  ].map(({ label, value, mono }) => (
+                    <div key={label} className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/10">
+                      <span className="text-slate-400">{label}</span>
+                      <span className={`font-medium ${mono ? 'font-mono text-blue-400' : 'text-white'}`}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Resolution info */}
+              {bug.resolved && bug.resolvedAt && (
+                <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                  <h3 className="text-lg font-bold text-white mb-3">Resolution</h3>
+                  <div className="flex justify-between p-3 bg-green-500/10 rounded-xl border border-green-500/20 text-sm">
+                    <span className="text-slate-400">Resolved At</span>
+                    <span className="text-green-400 font-medium">{new Date(bug.resolvedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Attachment */}
+              {bug.attachmentUrl && (
+                <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+                  <h3 className="text-lg font-bold text-white mb-4">Attachment</h3>
+                  {/\.(png|jpg|jpeg|gif|webp)$/i.test(bug.attachmentUrl) ? (
+                    <div>
+                      <img src={bug.attachmentUrl} alt="Bug attachment" className="rounded-xl max-w-full max-h-96 object-contain border border-white/10 mb-3" />
+                      <a href={bug.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-medium transition-all">
+                        Open Full Image
+                      </a>
+                    </div>
+                  ) : (
+                    <a href={bug.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white transition-all">
+                      <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                      Open Attachment
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Attachment */}
-          {bug.attachmentUrl && (
+          {/* Chat Tab */}
+          {activeTab === 'chat' && bug.task?._id && (
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
-              <h3 className="text-lg font-bold text-white mb-4">Attachment</h3>
-              {/\.(png|jpg|jpeg|gif|webp)$/i.test(bug.attachmentUrl) ? (
-                <div>
-                  <img src={bug.attachmentUrl} alt="Bug attachment" className="rounded-xl max-w-full max-h-96 object-contain border border-white/10 mb-3" />
-                  <a href={bug.attachmentUrl} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-medium transition-all">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                    Open Full Image
-                  </a>
-                </div>
-              ) : (
-                <a href={bug.attachmentUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white transition-all">
-                  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                  Open Attachment
-                </a>
-              )}
+              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                Task Chat
+              </h3>
+              <TaskChat taskId={bug.task._id} />
             </div>
           )}
 

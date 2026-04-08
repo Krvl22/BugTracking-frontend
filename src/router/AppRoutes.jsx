@@ -27,6 +27,7 @@ import ManagerBugDetails     from "../pages/manager/ManagerBugDetails"
 import ManagerTaskDetails    from "../pages/manager/ManagerTaskDetails"
 import ManagerSprint         from "../pages/manager/ManagerSprints";
 import ManagerAssignTester    from "../pages/manager/ManagerAssignTester";
+import ManagerSprintDetails from "../pages/manager/ManagerSprintDetails"
 
 import DeveloperDashboard      from "../components/developer/DeveloperDashboard"
 import DeveloperProjects       from "../pages/developer/DeveloperProjects"
@@ -36,6 +37,7 @@ import DeveloperProjectDetails from "../pages/developer/DeveloperProjectDetails"
 import DeveloperSettings       from "../pages/developer/DeveloperSettings"
 import DeveloperBugDetails     from "../pages/developer/DeveloperBugDetails"
 import DeveloperTaskDetails    from "../pages/developer/DeveloperTaskDetails"
+import DeveloperAnalytics from "../pages/developer/DeveloperAnalytics"
 
 import TesterDashboard  from "../components/tester/TesterDashboard"
 import TesterBugs       from "../pages/tester/TesterBugs"
@@ -44,6 +46,8 @@ import TesterTasks      from "../pages/tester/TesterTasks"
 import TesterSettings   from "../pages/tester/TesterSettings"
 import TesterBugDetails from "../pages/tester/TesterBugDetails"  // NEW
 import TesterTaskDetails from "../pages/tester/TesterTaskdetails"
+import TesterChatHistory from "../pages/tester/TesterChatHistory"
+import TesterChatView    from "../pages/tester/TesterChatView"
 
 const router = createBrowserRouter([
 
@@ -81,6 +85,7 @@ const router = createBrowserRouter([
       { path: "/manager/tasks/:id",    element: <ManagerTaskDetails /> },
       { path: "/manager/sprints", element: <ManagerSprint /> },
       { path: "/manager/assign-tester", element: <ManagerAssignTester /> },
+      { path: "/manager/sprints/:id", element: <ManagerSprintDetails /> },
       { path: "/manager/team",         element: <ManagerTeam /> },
       { path: "/manager/settings",     element: <ManagerSettings /> },
     ]
@@ -98,6 +103,8 @@ const router = createBrowserRouter([
       { path: "/developer/bugs",         element: <DeveloperBugs /> },
       { path: "/developer/bugs/:id",     element: <DeveloperBugDetails /> },
       { path: "/developer/settings",     element: <DeveloperSettings /> },
+      { path: "/developer/analytics", element: <DeveloperAnalytics /> },
+
     ]
   },
 
@@ -111,6 +118,8 @@ const router = createBrowserRouter([
       { path: "/tester/bugs",      element: <TesterBugs /> },
       { path: "/tester/bugs/:id",  element: <TesterBugDetails /> },   // NEW
       { path: "/tester/reports",   element: <TesterReports /> },
+      { path: "/tester/chat-history",          element: <TesterChatHistory /> },
+      { path: "/tester/chat-history/:taskId",  element: <TesterChatView /> },
       { path: "/tester/settings",  element: <TesterSettings /> },
     ]
   },

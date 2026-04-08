@@ -545,7 +545,7 @@ const DeveloperDashboard = () => {
                 {tasks.length === 0 ? (
                   <p className="text-slate-400 text-sm">No tasks assigned yet.</p>
                 ) : tasks.slice(0, 6).map(task => (
-                  <div key={task._id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all">
+                  <div key={task._id} onClick={() => navigate(`/developer/tasks/${task._id}`)} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
