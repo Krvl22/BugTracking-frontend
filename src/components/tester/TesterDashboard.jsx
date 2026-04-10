@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'
 import NotificationBell from '../../components/NotificationBell'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const priorityDueColor = (dueDate, status) => {
   if (status === 'completed') return null
@@ -29,6 +30,8 @@ const TesterDashboard = () => {
   const [recentActivity, setRecentActivity] = useState([])
   const [loading, setLoading]             = useState(true)
   const [approving, setApproving]         = useState(null)
+
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed') // change key per role
 
   const navigate = useNavigate()
   const user     = JSON.parse(localStorage.getItem('user') || '{}')
@@ -95,7 +98,8 @@ const TesterDashboard = () => {
 
       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64 overflow-y-auto h-screen
+      {/* <div className="lg:ml-64 overflow-y-auto h-screen */}
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen`}>
         [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.15)_transparent]
         [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
         [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full

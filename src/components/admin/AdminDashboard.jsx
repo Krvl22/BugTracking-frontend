@@ -557,6 +557,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import AdminSidebar from './AdminSidebar'
 import NotificationBell from '../NotificationBell'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const UsersIcon  = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
 const FolderIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
@@ -581,6 +582,7 @@ const AdminDashboard = () => {
   const [recentUsers, setRecentUsers] = useState([])
   const [projects, setProjects]       = useState([])
   const [loading, setLoading]         = useState(true)
+  const mlClass = useSidebarCollapsed('adminSidebarCollapsed') // change key per role
 
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')
@@ -653,15 +655,16 @@ const AdminDashboard = () => {
         - On webkit: thin transparent track with semi-transparent thumb
       */}
       <div
-        className="lg:ml-64 overflow-y-auto h-screen
+        //className="lg:ml-64 overflow-y-auto h-screen
+        className={`${mlClass} transition-all duration-300
           [scrollbar-width:thin]
           [scrollbar-color:rgba(255,255,255,0.15)_transparent]
           [&::-webkit-scrollbar]:w-1.5
           [&::-webkit-scrollbar-track]:bg-transparent
           [&::-webkit-scrollbar-thumb]:bg-white/20
           [&::-webkit-scrollbar-thumb]:rounded-full
-          [&::-webkit-scrollbar-thumb:hover]:bg-white/35"
-      >
+          [&::-webkit-scrollbar-thumb:hover]:bg-white/35`
+      }>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
