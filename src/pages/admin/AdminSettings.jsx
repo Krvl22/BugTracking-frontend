@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const NAV_ITEMS = [
   { name: 'Dashboard', path: '/admindashboard', d: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -17,6 +18,7 @@ const AdminSettings = () => {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'))
   const [form, setForm]               = useState({ firstName: '', lastName: '' })
   const [passwords, setPasswords]     = useState({ current: '', newPass: '', confirm: '' })
+  const mlClass = useSidebarCollapsed('adminSidebarCollapsed')
 
   const navigate  = useNavigate()
   const location  = useLocation()
@@ -179,7 +181,7 @@ const AdminSettings = () => {
         </div>
       </aside>
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

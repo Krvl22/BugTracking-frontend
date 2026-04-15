@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation, useParams } from 'react-router-dom';
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const AdminProjectDetails = () => {
   const [sidebarOpen, setSidebarOpen]   = useState(false)
@@ -23,6 +24,7 @@ const AdminProjectDetails = () => {
 
   const [sprints, setSprints] = useState([])
   const [allBugs, setAllBugs] = useState([])
+  const mlClass = useSidebarCollapsed('adminSidebarCollapsed')
 
   const navigate  = useNavigate()
   const location  = useLocation()
@@ -253,7 +255,7 @@ const AdminProjectDetails = () => {
         </div>
       </aside>
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
@@ -562,7 +564,12 @@ const AdminProjectDetails = () => {
                   <p className="text-slate-400 text-sm">Sprints are created by project managers</p>
                 </div>
               ) : sprints.map(sprint => {
-                const sprintTasks = tasks.filter(t => t.sprint === sprint._id || t.sprint?._id === sprint._id)
+                const sprintTasks = sprint.tasks?.length > 0
+              ? sprint.tasks  // use populated tasks from sprint object
+              : tasks.filter(t => {
+                  const sid = t.sprint?._id?.toString() || t.sprint?.toString()
+                  return sid === sprint._id?.toString()
+                })
                 const done        = sprintTasks.filter(t => t.status === 'completed').length
                 const progress    = sprintTasks.length ? Math.round((done / sprintTasks.length) * 100) : 0
                 const end         = sprint.endDate ? new Date(sprint.endDate) : null

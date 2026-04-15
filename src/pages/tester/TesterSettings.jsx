@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const TesterSettings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -11,6 +12,7 @@ const TesterSettings = () => {
   const [form, setForm]               = useState({ firstName: '', lastName: '' })
   const fileRef  = useRef(null)
   const navigate = useNavigate()
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
   const token    = localStorage.getItem('token')
   const headers  = { Authorization: `Bearer ${token}` }
 
@@ -118,7 +120,7 @@ const TesterSettings = () => {
 
       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

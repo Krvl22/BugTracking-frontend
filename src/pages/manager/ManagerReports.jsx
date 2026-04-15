@@ -5,6 +5,7 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
 } from 'recharts'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 // Same color scheme as AdminAnalytics for consistency
 const STATUS_COLORS = {
@@ -36,6 +37,7 @@ const ManagerReports = () => {
   const [data, setData]               = useState(null)
   const [loading, setLoading]         = useState(true)
   const navigate = useNavigate()
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
@@ -92,7 +94,8 @@ const ManagerReports = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

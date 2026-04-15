@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation, useParams } from 'react-router-dom';
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const AdminUserDetails = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -9,6 +10,7 @@ const AdminUserDetails = () => {
   const [projects, setProjects]       = useState([]);
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState('overview');
+  const mlClass = useSidebarCollapsed('adminSidebarCollapsed')
 
   const navigate  = useNavigate();
   const location  = useLocation();
@@ -192,7 +194,7 @@ const AdminUserDetails = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
 
         {/* Top Bar */}
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30">

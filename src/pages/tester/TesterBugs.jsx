@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'
 import { successToast, errorToast } from '../../utils/toast'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const severityColor = (s) => ({
   critical: 'bg-red-500/20 text-red-400',
@@ -26,6 +27,7 @@ const TesterBugs = () => {
   const [loading, setLoading]           = useState(true)
   const [filter, setFilter]             = useState('all')
   const [updatingId, setUpdatingId]     = useState(null)
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const navigate = useNavigate()
   const user     = JSON.parse(localStorage.getItem('user') || '{}')
@@ -126,7 +128,7 @@ const TesterBugs = () => {
 
       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64 overflow-y-auto h-screen [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.15)_transparent]">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

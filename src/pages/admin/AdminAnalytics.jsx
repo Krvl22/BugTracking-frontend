@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar,XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area, Legend,RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const TOOLTIP_STYLE = { background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }
 
@@ -43,6 +44,7 @@ const AdminAnalytics = () => {
   const [auditLogs, setAuditLogs]     = useState([])
   const [loading, setLoading]         = useState(true)
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'))
+  const mlClass = useSidebarCollapsed('adminSidebarCollapsed')
 
   const navigate  = useNavigate()
   const location  = useLocation()
@@ -191,7 +193,7 @@ const [sD, uD, pD, tD, bD, lD] = await Promise.all([
         </div>
       </aside>
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
@@ -328,6 +330,30 @@ const [sD, uD, pD, tD, bD, lD] = await Promise.all([
               )}
             </div>
           </div>
+
+
+
+{/* ── Task Completion Area Chart ── */}
+<div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+  <h2 className="text-xl font-bold text-white mb-4">Task Status Overview (Area)</h2>
+  {!tasks.length ? <p className="text-slate-400 text-sm">No task data</p> : (
+    <ResponsiveContainer width="100%" height={220}>
+      <AreaChart data={taskBarData}>
+        <defs>
+          <linearGradient id="taskGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 10 }} />
+        <YAxis stroke="#94a3b8" />
+        <Tooltip contentStyle={TOOLTIP_STYLE} />
+        <Area type="monotone" dataKey="value" stroke="#38bdf8" fill="url(#taskGrad)" strokeWidth={2} />
+      </AreaChart>
+    </ResponsiveContainer>
+  )}
+</div>
 
           {/* Most Active Users + Recent Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

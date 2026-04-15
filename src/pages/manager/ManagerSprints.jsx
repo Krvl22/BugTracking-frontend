@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 import { successToast, errorToast } from '../../utils/toast'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const statusColor = (s) => ({
   planned:   'bg-slate-500/20 text-slate-400 border-slate-500/30',
@@ -30,6 +31,7 @@ const SprintTimeline = ({ startDate, endDate }) => {
   const pct = total > 0 ? Math.round((elapsed / total) * 100) : 0
   const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
   const isOver   = now > end
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   return (
     <div className="mt-4">
@@ -180,7 +182,7 @@ const ManagerSprint = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

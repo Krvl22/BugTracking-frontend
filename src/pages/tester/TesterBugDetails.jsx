@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'
 import TaskChat from '../../components/common/TaskChat'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const severityColor = (s) => ({
   critical: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -19,6 +20,7 @@ const TesterBugDetails = () => {
   const { id }   = useParams()
   const token    = localStorage.getItem('token')
   const user     = JSON.parse(localStorage.getItem('user') || '{}')
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 
@@ -63,7 +65,7 @@ const TesterBugDetails = () => {
 
       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

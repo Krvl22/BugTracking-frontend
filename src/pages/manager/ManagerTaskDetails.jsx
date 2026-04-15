@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 import TaskChat from '../../components/common/TaskChat'
 import { successToast, errorToast } from '../../utils/toast'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const taskStatusColor = (s) => ({
   to_do:           'bg-slate-500/20 text-slate-400',
@@ -43,6 +44,7 @@ const ManagerTaskDetails = () => {
   const [selectedTester, setSelectedTester]     = useState('')
   const [assigningDev, setAssigningDev]         = useState(false)
   const [selectedDev, setSelectedDev]           = useState('')
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const navigate = useNavigate()
   const { id }   = useParams()
@@ -136,7 +138,7 @@ const ManagerTaskDetails = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

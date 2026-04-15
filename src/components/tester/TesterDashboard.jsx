@@ -31,7 +31,7 @@ const TesterDashboard = () => {
   const [loading, setLoading]             = useState(true)
   const [approving, setApproving]         = useState(null)
 
-  const mlClass = useSidebarCollapsed('managerSidebarCollapsed') // change key per role
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const navigate = useNavigate()
   const user     = JSON.parse(localStorage.getItem('user') || '{}')
@@ -99,11 +99,11 @@ const TesterDashboard = () => {
       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       {/* <div className="lg:ml-64 overflow-y-auto h-screen */}
-      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen`}>
-        [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.15)_transparent]
-        [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
-        [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full
-        [&::-webkit-scrollbar-thumb:hover]:bg-white/35">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen
+  [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.15)_transparent]
+  [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
+  [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full
+  [&::-webkit-scrollbar-thumb:hover]:bg-white/35`}>
 
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -128,7 +128,8 @@ const TesterDashboard = () => {
         <main className="p-4 lg:p-8 relative z-10 space-y-6">
 
           {/* ✅ 6 Stat Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {/* <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"> */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {statCards.map((stat, i) => (
               <div key={i} className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 border border-white/20 hover:bg-white/15 transition-all">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center text-white mb-3`}>

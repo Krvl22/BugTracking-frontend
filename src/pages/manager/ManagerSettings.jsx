@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 // Profile/Account Settings page for Project Manager
 // Uses PATCH /users/profile-pic and PATCH /users/profile-pic/remove (per UserRoutes.js)
@@ -12,6 +13,7 @@ const ManagerSettings = () => {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'))
   const [form, setForm]               = useState({ firstName: '', lastName: '' })
   const [passwords, setPasswords]     = useState({ current: '', newPass: '', confirm: '' })
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
   const fileRef  = useRef(null)
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')
@@ -138,7 +140,8 @@ const ManagerSettings = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

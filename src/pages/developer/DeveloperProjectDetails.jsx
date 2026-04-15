@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DeveloperSidebar from '../../components/developer/DeveloperSidebar'
 import NotificationBell from '../../components/NotificationBell'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
+
 
 const priorityColor = (p) => ({
   high:   'bg-red-500/20 text-red-400',
@@ -44,6 +46,7 @@ const DeveloperProjectDetails = () => {
   const [loading, setLoading]         = useState(true)
   const [activeTab, setActiveTab]     = useState('overview')
   const [submitting, setSubmitting]   = useState(null)
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const navigate  = useNavigate()
   const { id }    = useParams()
@@ -151,7 +154,8 @@ const DeveloperProjectDetails = () => {
 
       <DeveloperSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

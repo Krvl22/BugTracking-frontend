@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 import { successToast, errorToast } from "../../utils/toast"
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const priorityColor = (p) => ({ high: 'bg-red-500/20 text-red-400', medium: 'bg-yellow-500/20 text-yellow-400', low: 'bg-green-500/20 text-green-400', urgent: 'bg-red-600/30 text-red-300' }[p] || 'bg-slate-500/20 text-slate-400')
 const statusColor   = (s) => ({ to_do: 'bg-slate-500/20 text-slate-400', assigned: 'bg-blue-500/20 text-blue-400', in_progress: 'bg-yellow-500/20 text-yellow-400', submitted: 'bg-purple-500/20 text-purple-400', in_testing: 'bg-cyan-500/20 text-cyan-400', bug_found: 'bg-red-500/20 text-red-400', fix_in_progress: 'bg-orange-500/20 text-orange-400', resubmitted: 'bg-indigo-500/20 text-indigo-400', completed: 'bg-green-500/20 text-green-400' }[s] || 'bg-slate-500/20 text-slate-400')
@@ -20,6 +21,8 @@ const ManagerTasks = () => {
   const [showCreate, setShowCreate]       = useState(false)
   const [taskForm, setTaskForm]           = useState({ title: '', description: '', project: '', module: '', assignedTo: '', testerId:'', priority: 'medium', dueDate: '' })
   const [taskMsg, setTaskMsg]             = useState('')
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+
   const navigate = useNavigate()
 
   const token   = localStorage.getItem('token')
@@ -138,7 +141,8 @@ const ManagerTasks = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

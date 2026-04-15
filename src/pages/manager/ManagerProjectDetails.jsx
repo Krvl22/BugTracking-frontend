@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 import { formatDate } from '../../utils/DateUtils'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const taskStatusColor = (s) => ({
   to_do:           'bg-slate-500/20 text-slate-400',
@@ -57,6 +58,7 @@ const ManagerProjectDetails = () => {
   const [sprints, setSprints]               = useState([])
   const [loading, setLoading]               = useState(true)
   const [activeTab, setActiveTab]           = useState('overview')
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   // Create Task modal (standalone)
   const [showCreateTask, setShowCreateTask] = useState(false)
@@ -455,7 +457,8 @@ const ManagerProjectDetails = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
         {/* ── Header ── */}
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">

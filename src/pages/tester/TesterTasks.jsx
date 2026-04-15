@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import TesterSidebar from '../../components/tester/TesterSidebar'
 import NotificationBell from '../../components/NotificationBell'
 import { errorToast, successToast } from '../../utils/toast'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 // ✅ Due date indicator helper
 const dueDateLabel = (dueDate, status) => {
@@ -34,6 +35,7 @@ const TesterTasks = () => {
   const [standaloneBugFile, setStandaloneBugFile]       = useState(null)
   const [allTasks, setAllTasks]                         = useState([])
   const [submittingStandalone, setSubmittingStandalone] = useState(false)
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const fileRef           = useRef(null)
   const standaloneFileRef = useRef(null)
@@ -160,10 +162,7 @@ const TesterTasks = () => {
 
       <TesterSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64 overflow-y-auto h-screen
-        [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.15)_transparent]
-        [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
-        [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
 
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">

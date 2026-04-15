@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 import { successToast, errorToast } from '../../utils/toast'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const severityColor = (s) => ({
   low:      'bg-green-500/20 text-green-400',
@@ -18,6 +19,7 @@ const ManagerBugs = () => {
   const [filter, setFilter]                 = useState('all')
   const [reassigningBug, setReassigningBug] = useState(null)
   const [reassignUserId, setReassignUserId] = useState('')
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')
@@ -123,7 +125,8 @@ const ManagerBugs = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 import { successToast, errorToast } from "../../utils/toast"
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
+
 const roleColor = (r) => r === 'developer' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-orange-500/20 text-orange-400'
 const roleGrad  = (r) => r === 'developer' ? 'from-cyan-500 to-blue-500' : 'from-orange-500 to-red-500'
 
@@ -15,6 +17,8 @@ const ManagerTeam = () => {
   const [addSearch, setAddSearch]     = useState('')
   const [search, setSearch]           = useState('')
   const [roleFilter, setRoleFilter]   = useState('all')
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+
   const navigate = useNavigate()
 
   const token   = localStorage.getItem('token')
@@ -90,7 +94,8 @@ const ManagerTeam = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">

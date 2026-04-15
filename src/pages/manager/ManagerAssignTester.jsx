@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import ManagerSidebar from '../../components/projectManager/ManagerSidebar'
 import { successToast, errorToast } from '../../utils/toast'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 
 const priorityColor = (p) => ({
   high:   'bg-red-500/20 text-red-400 border-red-500/30',
@@ -26,6 +27,7 @@ const ManagerAssignTester = () => {
   const [assigning, setAssigning]       = useState(null)
   const [selectedTester, setSelectedTester] = useState({})
   const [search, setSearch]             = useState('')
+  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
 
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')
@@ -95,7 +97,8 @@ const ManagerAssignTester = () => {
 
       <ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="lg:ml-64">
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
         {/* Header */}
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">

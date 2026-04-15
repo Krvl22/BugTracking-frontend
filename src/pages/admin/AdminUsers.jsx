@@ -1,7 +1,8 @@
-
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminSidebar from '../../components/admin/AdminSidebar'
+import NotificationBell from '../../components/NotificationBell'
+import { useSidebarCollapsed } from '../../hooks/UseSidebarCollapsed'
 import { successToast, errorToast } from '../../utils/toast'
 
 const ITEMS_PER_PAGE = 10
@@ -15,6 +16,9 @@ const AdminUsers = () => {
   const [form, setForm]                 = useState({ firstName: '', lastName: '', email: '', password: '', role: 'developer' })
   const [formError, setFormError]       = useState('')
   const [page, setPage]                 = useState(1)
+
+  // ✅ Sidebar collapse — same key as AdminSidebar uses
+  const mlClass = useSidebarCollapsed('adminSidebarCollapsed')
 
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')
@@ -78,8 +82,14 @@ const AdminUsers = () => {
         <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse" />
         <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-700" />
       </div>
+
+      {/* ✅ Using the shared AdminSidebar (has collapse + notifications built in) */}
       <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <div className="lg:ml-64 overflow-y-auto h-screen [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.15)_transparent]">
+
+      {/* ✅ Dynamic margin — responds to sidebar collapse */}
+      <div className={`${mlClass} transition-all duration-300 overflow-y-auto h-screen ...`}>
+
+
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-30 px-4 py-4 lg:px-8 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
@@ -91,17 +101,19 @@ const AdminUsers = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            <NotificationBell />
             <button onClick={() => setShowAddModal(true)} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium">+ Add New User</button>
             <button onClick={handleLogout} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg text-sm font-medium">Logout</button>
           </div>
         </header>
+
         <main className="p-4 lg:p-8 relative z-10">
           <div className="flex flex-wrap gap-2 mb-6">
             {[
-              { key: 'all', label: 'All', active: 'bg-gradient-to-r from-blue-500 to-cyan-500 border-transparent text-white', inactive: 'bg-white/10 border-white/20 text-white hover:bg-white/15' },
-              { key: 'active', label: 'Active', active: 'bg-green-500/20 border-green-500/30 text-green-400', inactive: 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10' },
-              { key: 'blocked', label: 'Blocked', active: 'bg-red-500/20 border-red-500/30 text-red-400', inactive: 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10' },
-              { key: 'inactive', label: 'Inactive', active: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400', inactive: 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10' },
+              { key: 'all',      label: 'All',      active: 'bg-gradient-to-r from-blue-500 to-cyan-500 border-transparent text-white',    inactive: 'bg-white/10 border-white/20 text-white hover:bg-white/15' },
+              { key: 'active',   label: 'Active',   active: 'bg-green-500/20 border-green-500/30 text-green-400',                          inactive: 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10' },
+              { key: 'blocked',  label: 'Blocked',  active: 'bg-red-500/20 border-red-500/30 text-red-400',                                inactive: 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10' },
+              { key: 'inactive', label: 'Inactive', active: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400',                       inactive: 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10' },
             ].map(btn => (
               <button key={btn.key} onClick={() => setFilter(btn.key)} className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all flex items-center gap-2 ${filter === btn.key ? btn.active : btn.inactive}`}>
                 {btn.label}
@@ -109,6 +121,7 @@ const AdminUsers = () => {
               </button>
             ))}
           </div>
+
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 overflow-hidden">
             <table className="w-full">
               <thead>
@@ -123,7 +136,10 @@ const AdminUsers = () => {
                   <tr key={i} onClick={() => navigate(`/admin/users/${user._id}`)} className="border-b border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">{user.firstName?.charAt(0) || 'U'}</div>
+                        {user.profilePic
+                          ? <img src={user.profilePic} className="w-9 h-9 rounded-full object-cover" alt="avatar" />
+                          : <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">{user.firstName?.charAt(0) || 'U'}</div>
+                        }
                         <div><p className="text-white font-medium">{user.firstName} {user.lastName}</p><p className="text-slate-400 text-xs">{user.email}</p></div>
                       </div>
                     </td>
@@ -143,6 +159,7 @@ const AdminUsers = () => {
               </tbody>
             </table>
           </div>
+
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-slate-400 text-sm">Showing {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users</p>
@@ -163,6 +180,7 @@ const AdminUsers = () => {
           )}
         </main>
       </div>
+
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="backdrop-blur-xl bg-slate-900/90 border border-white/20 rounded-2xl p-6 w-full max-w-md mx-4">
@@ -174,19 +192,19 @@ const AdminUsers = () => {
             </div>
             {formError && <p className="text-red-400 text-sm mb-4">{formError}</p>}
             <div className="space-y-4">
-              <input type="text" placeholder="First Name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
-              <input type="text" placeholder="Last Name" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
-              <input type="email" placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
-              <input type="password" placeholder="Password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
+              <input type="text"     placeholder="First Name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
+              <input type="text"     placeholder="Last Name"  value={form.lastName}  onChange={e => setForm({ ...form, lastName:  e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
+              <input type="email"    placeholder="Email"      value={form.email}     onChange={e => setForm({ ...form, email:     e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
+              <input type="password" placeholder="Password"   value={form.password}  onChange={e => setForm({ ...form, password:  e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500" />
               <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500">
-                <option value="developer" className="bg-slate-900">Developer</option>
-                <option value="tester" className="bg-slate-900">Tester</option>
+                <option value="developer"       className="bg-slate-900">Developer</option>
+                <option value="tester"          className="bg-slate-900">Tester</option>
                 <option value="project_manager" className="bg-slate-900">Project Manager</option>
               </select>
             </div>
             <div className="flex space-x-3 mt-6">
-              <button onClick={handleAddUser} className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium">Add User</button>
-              <button onClick={() => { setShowAddModal(false); setFormError('') }} className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium">Cancel</button>
+              <button onClick={handleAddUser}                                          className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium">Add User</button>
+              <button onClick={() => { setShowAddModal(false); setFormError('') }}     className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium">Cancel</button>
             </div>
           </div>
         </div>
