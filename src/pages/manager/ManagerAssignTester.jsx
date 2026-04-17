@@ -27,7 +27,7 @@ const ManagerAssignTester = () => {
   const [assigning, setAssigning]       = useState(null)
   const [selectedTester, setSelectedTester] = useState({})
   const [search, setSearch]             = useState('')
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')

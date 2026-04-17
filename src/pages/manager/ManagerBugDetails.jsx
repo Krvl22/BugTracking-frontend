@@ -22,7 +22,7 @@ const ManagerBugDetails = () => {
   const [reassigning, setReassigning]       = useState(false)
   const [reassignUserId, setReassignUserId] = useState('')
   const [activeTab, setActiveTab]           = useState('details')
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const navigate = useNavigate()
   const { id }   = useParams()

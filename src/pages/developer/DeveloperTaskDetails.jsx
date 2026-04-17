@@ -34,7 +34,7 @@ const DeveloperTaskDetails = () => {
   const [submitFile, setSubmitFile]     = useState(null)
   const [submitting, setSubmitting]     = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('developerSidebarCollapsed')
 
   const fileRef  = useRef(null)
   const navigate = useNavigate()

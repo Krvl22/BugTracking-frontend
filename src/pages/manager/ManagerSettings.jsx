@@ -13,7 +13,7 @@ const ManagerSettings = () => {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'))
   const [form, setForm]               = useState({ firstName: '', lastName: '' })
   const [passwords, setPasswords]     = useState({ current: '', newPass: '', confirm: '' })
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
   const fileRef  = useRef(null)
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')

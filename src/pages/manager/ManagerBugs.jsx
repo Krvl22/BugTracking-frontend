@@ -19,7 +19,7 @@ const ManagerBugs = () => {
   const [filter, setFilter]                 = useState('all')
   const [reassigningBug, setReassigningBug] = useState(null)
   const [reassignUserId, setReassignUserId] = useState('')
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')

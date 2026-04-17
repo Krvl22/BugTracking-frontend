@@ -47,7 +47,7 @@ const DeveloperTasks = () => {
   const fileRef  = useRef(null)
   const navigate = useNavigate()
   const user     = JSON.parse(localStorage.getItem('user') || '{}')
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('developerSidebarCollapsed')
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 

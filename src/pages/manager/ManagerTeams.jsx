@@ -17,7 +17,7 @@ const ManagerTeam = () => {
   const [addSearch, setAddSearch]     = useState('')
   const [search, setSearch]           = useState('')
   const [roleFilter, setRoleFilter]   = useState('all')
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const navigate = useNavigate()
 

@@ -37,7 +37,7 @@ const ManagerReports = () => {
   const [data, setData]               = useState(null)
   const [loading, setLoading]         = useState(true)
   const navigate = useNavigate()
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const handleLogout = () => { localStorage.clear(); navigate('/') }
 

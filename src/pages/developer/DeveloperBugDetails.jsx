@@ -19,7 +19,7 @@ const DeveloperBugDetails = () => {
   const [error, setError]             = useState('')
   const [activeTab, setActiveTab]     = useState('details')
   const navigate = useNavigate()
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('developerSidebarCollapsed')
 
   const { id }   = useParams()
   const token    = localStorage.getItem('token')

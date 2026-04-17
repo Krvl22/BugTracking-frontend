@@ -46,7 +46,7 @@ const DeveloperProjectDetails = () => {
   const [loading, setLoading]         = useState(true)
   const [activeTab, setActiveTab]     = useState('overview')
   const [submitting, setSubmitting]   = useState(null)
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('developerSidebarCollapsed')
 
   const navigate  = useNavigate()
   const { id }    = useParams()

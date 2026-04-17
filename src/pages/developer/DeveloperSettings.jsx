@@ -13,7 +13,7 @@ const DeveloperSettings = () => {
   const [form, setForm]               = useState({ firstName: '', lastName: '' })
   const fileRef  = useRef(null)
   const navigate = useNavigate()
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('developerSidebarCollapsed')
 
   const token    = localStorage.getItem('token')
   const headers  = { Authorization: `Bearer ${token}` }

@@ -21,7 +21,7 @@ const ManagerTasks = () => {
   const [showCreate, setShowCreate]       = useState(false)
   const [taskForm, setTaskForm]           = useState({ title: '', description: '', project: '', module: '', assignedTo: '', testerId:'', priority: 'medium', dueDate: '' })
   const [taskMsg, setTaskMsg]             = useState('')
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const navigate = useNavigate()
 

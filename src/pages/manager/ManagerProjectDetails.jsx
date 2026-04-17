@@ -58,7 +58,7 @@ const ManagerProjectDetails = () => {
   const [sprints, setSprints]               = useState([])
   const [loading, setLoading]               = useState(true)
   const [activeTab, setActiveTab]           = useState('overview')
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   // Create Task modal (standalone)
   const [showCreateTask, setShowCreateTask] = useState(false)

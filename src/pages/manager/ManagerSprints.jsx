@@ -31,7 +31,7 @@ const SprintTimeline = ({ startDate, endDate }) => {
   const pct = total > 0 ? Math.round((elapsed / total) * 100) : 0
   const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
   const isOver   = now > end
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   return (
     <div className="mt-4">

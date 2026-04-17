@@ -44,7 +44,7 @@ const ManagerTaskDetails = () => {
   const [selectedTester, setSelectedTester]     = useState('')
   const [assigningDev, setAssigningDev]         = useState(false)
   const [selectedDev, setSelectedDev]           = useState('')
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const navigate = useNavigate()
   const { id }   = useParams()

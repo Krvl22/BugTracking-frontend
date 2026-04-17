@@ -16,7 +16,7 @@ const ManagerSprintDetails = () => {
   const [loading, setLoading]         = useState(true)
   const [activeTab, setActiveTab]     = useState('tasks')
   const [selectedTaskId, setSelectedTaskId] = useState(null)
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const navigate = useNavigate()
   const { id }   = useParams()

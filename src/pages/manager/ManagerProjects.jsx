@@ -23,7 +23,7 @@ const ManagerProjects = () => {
   const [createError, setCreateError] = useState('')
   const [form, setForm]               = useState({ name: '', description: '', projectKey: '', startDate: '', endDate: '' })
   const navigate = useNavigate()
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('managerSidebarCollapsed')
 
   const user        = JSON.parse(localStorage.getItem('user') || '{}')
   const token       = localStorage.getItem('token')

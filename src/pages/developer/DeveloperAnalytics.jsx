@@ -13,7 +13,7 @@ const DeveloperAnalytics = () => {
   const [tasks, setTasks]             = useState([])
   const [bugs, setBugs]               = useState([])
   const [loading, setLoading]         = useState(true)
-  const mlClass = useSidebarCollapsed('testerSidebarCollapsed')
+  const mlClass = useSidebarCollapsed('developerSidebarCollapsed')
 
   const navigate = useNavigate()
   const user     = JSON.parse(localStorage.getItem('user') || '{}')
