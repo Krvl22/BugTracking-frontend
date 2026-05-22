@@ -14,11 +14,11 @@ const DeveloperSidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const location = useLocation()
   const [user, setUser]     = useState(() => JSON.parse(localStorage.getItem('user') || '{}'))
   const [counts, setCounts] = useState({ tasks: 0, bugs: 0, projects: 0 })
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('devSidebarCollapsed') === 'true')
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('developerSidebarCollapsed') === 'true')
 
   const toggleCollapse = () => setCollapsed(prev => {
     const next = !prev
-    localStorage.setItem('devSidebarCollapsed', String(next))
+    localStorage.setItem('developerSidebarCollapsed', String(next))
     window.dispatchEvent(new CustomEvent('sidebarToggled', { detail: { collapsed: next, role: 'developer' } }))
     return next
   })
@@ -68,7 +68,7 @@ const DeveloperSidebar = ({ sidebarOpen, setSidebarOpen }) => {
     <>
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      <aside className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 w-64 ${collapsed ? 'lg:w-16' : 'lg:w-64'} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+      <aside className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="h-full flex flex-col px-3 py-4 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden backdrop-blur-xl bg-white/10 border-r border-white/20">
 
           <div className={`flex items-center mb-6 ${collapsed ? 'justify-center' : 'justify-between px-1'}`}>
